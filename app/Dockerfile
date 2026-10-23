@@ -6,6 +6,9 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
+LABEL org.opencontainers.image.source="https://github.com/hrushikeshkuwlekar/lightweight-monitoring-stack"
+LABEL org.opencontainers.image.description="Ultra-low resource monitoring demo app"
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
