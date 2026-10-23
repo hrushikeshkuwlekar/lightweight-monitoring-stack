@@ -1,7 +1,3 @@
-## @section Global parameters
-## @param namespace Kubernetes namespace to deploy into
-namespace: monitoring
-
 ## @section Demo App parameters
 demoApp:
   ## @param demoApp.replicaCount Number of demo-app replicas

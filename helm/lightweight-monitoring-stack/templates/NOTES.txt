@@ -6,16 +6,16 @@
 
 📋 Check pod status:
 
-  kubectl get pods -n {{ .Values.namespace }}
+  kubectl get pods -n {{ .Release.Namespace }}
 
 🌐 Access the services:
 
-  Demo App:    kubectl port-forward svc/demo-app-svc    -n {{ .Values.namespace }} 8000:{{ .Values.demoApp.port }}
+  Demo App:    kubectl port-forward svc/demo-app-svc    -n {{ .Release.Namespace }} 8000:{{ .Values.demoApp.port }}
 {{- if .Values.grafana.enabled }}
-  Grafana:     kubectl port-forward svc/grafana-svc      -n {{ .Values.namespace }} 3000:{{ .Values.grafana.port }}
+  Grafana:     kubectl port-forward svc/grafana-svc      -n {{ .Release.Namespace }} 3000:{{ .Values.grafana.port }}
 {{- end }}
 {{- if .Values.prometheus.enabled }}
-  Prometheus:  kubectl port-forward svc/prometheus-svc   -n {{ .Values.namespace }} 9090:{{ .Values.prometheus.port }}
+  Prometheus:  kubectl port-forward svc/prometheus-svc   -n {{ .Release.Namespace }} 9090:{{ .Values.prometheus.port }}
 {{- end }}
 
 Then open in your browser:
