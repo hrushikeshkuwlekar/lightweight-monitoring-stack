@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Helm
+helm/lightweight-monitoring-stack/charts/
+*.tgz
+.helm-packages/
+
+# Docker
+.docker/
+
+# Misc
+*.log
+.env

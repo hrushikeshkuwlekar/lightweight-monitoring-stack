@@ -1,0 +1,118 @@
+{{- if .Values.prometheus.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: prometheus
+    {{- include "lightweight-monitoring-stack.labels" . | nindent 4 }}
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: {{ .Values.prometheus.scrapeInterval }}
+      evaluation_interval: {{ .Values.prometheus.evaluationInterval }}
+
+    rule_files:
+      - /etc/prometheus/alerts.yml
+
+    scrape_configs:
+      - job_name: 'demo-app'
+        metrics_path: '/metrics'
+        static_configs:
+          - targets: ['demo-app-svc:{{ .Values.demoApp.port }}']
+            labels:
+              app: 'demo-app'
+              environment: 'helm-deploy'
+
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:{{ .Values.prometheus.port }}']
+
+  alerts.yml: |
+    groups:
+      - name: demo-app-alerts
+        rules:
+          - alert: HighErrorRate
+            expr: sum(rate(http_requests_total{status_code=~"5.*"}[1m])) / sum(rate(http_requests_total[1m])) > 0.1
+            for: 15s
+            labels:
+              severity: warning
+            annotations:
+              summary: "High error rate detected (>10% 5xx errors)"
+              description: "App error rate exceeded threshold."
+
+          - alert: LatencySpike
+            expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[1m])) by (le)) > 0.8
+            for: 15s
+            labels:
+              severity: warning
+            annotations:
+              summary: "p95 Latency spike (>800ms)"
+              description: "App response time is degraded."
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: prometheus
+    {{- include "lightweight-monitoring-stack.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+      - name: prometheus
+        image: "{{ .Values.prometheus.image.repository }}:{{ .Values.prometheus.image.tag }}"
+        args:
+          - "--config.file=/etc/prometheus/prometheus.yml"
+          - "--storage.tsdb.path=/prometheus"
+          - "--storage.tsdb.retention.time={{ .Values.prometheus.retention.time }}"
+          - "--storage.tsdb.retention.size={{ .Values.prometheus.retention.size }}"
+          - "--storage.tsdb.min-block-duration=2h"
+          - "--storage.tsdb.max-block-duration=2h"
+          - "--query.max-samples=200000"
+          - "--web.enable-lifecycle"
+        ports:
+        - containerPort: {{ .Values.prometheus.port }}
+          name: web
+        resources:
+          requests:
+            cpu: {{ .Values.prometheus.resources.requests.cpu }}
+            memory: {{ .Values.prometheus.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.prometheus.resources.limits.cpu }}
+            memory: {{ .Values.prometheus.resources.limits.memory }}
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/prometheus
+      volumes:
+      - name: config-volume
+        configMap:
+          name: prometheus-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-svc
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: prometheus
+    {{- include "lightweight-monitoring-stack.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.prometheus.serviceType }}
+  ports:
+  - port: {{ .Values.prometheus.port }}
+    targetPort: {{ .Values.prometheus.port }}
+    name: web
+  selector:
+    app: prometheus
+{{- end }}

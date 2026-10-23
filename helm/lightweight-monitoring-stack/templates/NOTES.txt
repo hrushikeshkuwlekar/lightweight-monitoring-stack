@@ -1,0 +1,31 @@
+🚀 Lightweight Monitoring Stack has been deployed!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Total estimated RAM: ~120 MB  |  CPU: < 0.05 cores
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 Check pod status:
+
+  kubectl get pods -n {{ .Values.namespace }}
+
+🌐 Access the services:
+
+  Demo App:    kubectl port-forward svc/demo-app-svc    -n {{ .Values.namespace }} 8000:{{ .Values.demoApp.port }}
+{{- if .Values.grafana.enabled }}
+  Grafana:     kubectl port-forward svc/grafana-svc      -n {{ .Values.namespace }} 3000:{{ .Values.grafana.port }}
+{{- end }}
+{{- if .Values.prometheus.enabled }}
+  Prometheus:  kubectl port-forward svc/prometheus-svc   -n {{ .Values.namespace }} 9090:{{ .Values.prometheus.port }}
+{{- end }}
+
+Then open in your browser:
+  • Demo App  → http://localhost:8000
+{{- if .Values.grafana.enabled }}
+  • Grafana   → http://localhost:3000  (no login required)
+{{- end }}
+{{- if .Values.prometheus.enabled }}
+  • Prometheus→ http://localhost:9090
+{{- end }}
+
+💡 Toggle the background traffic generator:
+  curl -X POST http://localhost:8000/api/simulator/toggle

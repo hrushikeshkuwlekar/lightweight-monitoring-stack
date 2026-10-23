@@ -1,0 +1,26 @@
+You can now access all the OpenTelemetry Demo services directly from your Mac's browser using that IP address and port 8080:
+Demo UI: http://192.168.139.2:8080/
+Chat with an agent: http://192.168.139.2:8080/chatbot/
+Jaeger UI: http://192.168.139.2:8080/jaeger/ui/
+Grafana: http://192.168.139.2:8080/grafana/
+Feature Flags UI: http://192.168.139.2:8080/feature/
+
+Because of OrbStack's built-in DNS magic, you can also access these same services using the .local hostname without needing to remember the IP:
+http://frontend-proxy.default.k8s.orb.local:8080/
+
+
+
+helm install my-otel-demo open-telemetry/opentelemetry-demo \
+  -n opentelemetry-demo \
+  --set grafana.resources.limits.memory=500Mi
+
+
+kubectl patch svc frontend-proxy -n opentelemetry-demo -p '{"spec": {"type": "LoadBalancer"}}'
+
+kubectl describe pod -l app.kubernetes.io/name=grafana -n opentelemetry-demo
+
+
+kubectl patch svc mcp -n opentelemetry-demo -p '{"spec": {"type": "LoadBalancer"}}'
+
+
+kubectl get svc mcp -n opentelemetry-demo

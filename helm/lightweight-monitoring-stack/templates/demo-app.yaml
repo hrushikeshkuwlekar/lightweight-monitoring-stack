@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-app
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: demo-app
+    {{- include "lightweight-monitoring-stack.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.demoApp.replicaCount }}
+  selector:
+    matchLabels:
+      app: demo-app
+  template:
+    metadata:
+      labels:
+        app: demo-app
+    spec:
+      containers:
+      - name: demo-app
+        image: "{{ .Values.demoApp.image.repository }}:{{ include "lightweight-monitoring-stack.appImageTag" . }}"
+        imagePullPolicy: {{ .Values.demoApp.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.demoApp.port }}
+          name: http
+        resources:
+          requests:
+            cpu: {{ .Values.demoApp.resources.requests.cpu }}
+            memory: {{ .Values.demoApp.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.demoApp.resources.limits.cpu }}
+            memory: {{ .Values.demoApp.resources.limits.memory }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.demoApp.livenessProbe.path }}
+            port: {{ .Values.demoApp.port }}
+          initialDelaySeconds: {{ .Values.demoApp.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.demoApp.livenessProbe.periodSeconds }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.demoApp.readinessProbe.path }}
+            port: {{ .Values.demoApp.port }}
+          initialDelaySeconds: {{ .Values.demoApp.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.demoApp.readinessProbe.periodSeconds }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-app-svc
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: demo-app
+    {{- include "lightweight-monitoring-stack.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.demoApp.serviceType }}
+  ports:
+  - port: {{ .Values.demoApp.port }}
+    targetPort: {{ .Values.demoApp.port }}
+    name: http
+  selector:
+    app: demo-app

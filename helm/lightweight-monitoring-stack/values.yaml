@@ -1,0 +1,75 @@
+## @section Global parameters
+## @param namespace Kubernetes namespace to deploy into
+namespace: monitoring
+
+## @section Demo App parameters
+demoApp:
+  ## @param demoApp.replicaCount Number of demo-app replicas
+  replicaCount: 1
+  image:
+    ## @param demoApp.image.repository Docker image repository
+    repository: ghcr.io/hrushikeshkuwlekar/lightweight-monitoring-stack
+    ## @param demoApp.image.tag Docker image tag (defaults to Chart appVersion)
+    tag: ""
+    ## @param demoApp.image.pullPolicy Image pull policy
+    pullPolicy: IfNotPresent
+  ## @param demoApp.port Container port for the FastAPI app
+  port: 8000
+  ## @param demoApp.serviceType Kubernetes service type
+  serviceType: LoadBalancer
+  resources:
+    requests:
+      cpu: 20m
+      memory: 40Mi
+    limits:
+      cpu: 100m
+      memory: 80Mi
+  livenessProbe:
+    path: /healthz
+    initialDelaySeconds: 3
+    periodSeconds: 10
+  readinessProbe:
+    path: /healthz
+    initialDelaySeconds: 2
+    periodSeconds: 5
+
+## @section Prometheus parameters
+prometheus:
+  ## @param prometheus.enabled Enable Prometheus deployment
+  enabled: true
+  image:
+    repository: prom/prometheus
+    tag: v2.51.0
+  port: 9090
+  serviceType: LoadBalancer
+  scrapeInterval: 5s
+  evaluationInterval: 5s
+  retention:
+    time: 2h
+    size: 100MB
+  resources:
+    requests:
+      cpu: 30m
+      memory: 60Mi
+    limits:
+      cpu: 200m
+      memory: 120Mi
+
+## @section Grafana parameters
+grafana:
+  ## @param grafana.enabled Enable Grafana deployment
+  enabled: true
+  image:
+    repository: grafana/grafana-oss
+    tag: 10.4.1
+  port: 3000
+  serviceType: LoadBalancer
+  ## @param grafana.anonymousAuth Enable anonymous admin access (no login required)
+  anonymousAuth: true
+  resources:
+    requests:
+      cpu: 30m
+      memory: 70Mi
+    limits:
+      cpu: 200m
+      memory: 130Mi
