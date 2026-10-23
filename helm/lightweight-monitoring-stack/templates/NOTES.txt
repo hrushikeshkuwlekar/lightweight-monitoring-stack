@@ -21,7 +21,7 @@
 Then open in your browser:
   • Demo App  → http://localhost:8000
 {{- if .Values.grafana.enabled }}
-  • Grafana   → http://localhost:3000  (no login required)
+  • Grafana   → http://localhost:3000  (login-less Admin access enabled; credentials: admin / password)
 {{- end }}
 {{- if .Values.prometheus.enabled }}
   • Prometheus→ http://localhost:9090

@@ -62,6 +62,10 @@ grafana:
   serviceType: LoadBalancer
   ## @param grafana.anonymousAuth Enable anonymous admin access (no login required)
   anonymousAuth: true
+  ## @param grafana.adminUser Default admin username
+  adminUser: "admin"
+  ## @param grafana.adminPassword Default admin password
+  adminPassword: "password"
   resources:
     requests:
       cpu: 30m

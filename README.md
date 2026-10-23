@@ -71,7 +71,7 @@ docker pull ghcr.io/hrushikeshkuwlekar/lightweight-monitoring-stack:latest
 | Service | Local URL | Description |
 | :--- | :--- | :--- |
 | **Interactive Demo App** | [http://localhost:8000](http://localhost:8000) | Web UI to trigger traffic, errors, slow queries, and auto-traffic |
-| **Grafana Dashboard** | [http://localhost:3000](http://localhost:3000) | Live RED metrics (Anonymous Admin access enabled, no password needed) |
+| **Grafana Dashboard** | [http://localhost:3000](http://localhost:3000) | Live RED metrics (login-less Admin access enabled; or user: `admin` / password: `password`) |
 | **Prometheus UI** | [http://localhost:9090](http://localhost:9090) | Scrape targets, PromQL query explorer, and alert rules |
 | **Metrics Endpoint** | [http://localhost:8000/metrics](http://localhost:8000/metrics) | Standard Prometheus scrape target |
 

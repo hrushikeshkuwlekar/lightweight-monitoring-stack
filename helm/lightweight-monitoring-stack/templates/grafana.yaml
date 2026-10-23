@@ -308,12 +308,16 @@ spec:
         - containerPort: {{ .Values.grafana.port }}
           name: http
         env:
+        - name: GF_SECURITY_ADMIN_USER
+          value: {{ .Values.grafana.adminUser | quote }}
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          value: {{ .Values.grafana.adminPassword | quote }}
         - name: GF_AUTH_ANONYMOUS_ENABLED
           value: {{ .Values.grafana.anonymousAuth | quote }}
         - name: GF_AUTH_ANONYMOUS_ORG_ROLE
           value: "Admin"
         - name: GF_AUTH_DISABLE_LOGIN_FORM
-          value: {{ .Values.grafana.anonymousAuth | quote }}
+          value: "false"
         - name: GF_USERS_ALLOW_SIGN_UP
           value: "false"
         - name: GF_ANALYTICS_REPORTING_ENABLED

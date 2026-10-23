@@ -297,12 +297,16 @@ spec:
         - containerPort: 3000
           name: http
         env:
+        - name: GF_SECURITY_ADMIN_USER
+          value: "admin"
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          value: "password"
         - name: GF_AUTH_ANONYMOUS_ENABLED
           value: "true"
         - name: GF_AUTH_ANONYMOUS_ORG_ROLE
           value: "Admin"
         - name: GF_AUTH_DISABLE_LOGIN_FORM
-          value: "true"
+          value: "false"
         - name: GF_USERS_ALLOW_SIGN_UP
           value: "false"
         - name: GF_ANALYTICS_REPORTING_ENABLED
