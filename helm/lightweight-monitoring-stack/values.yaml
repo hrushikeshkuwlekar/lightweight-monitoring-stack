@@ -35,7 +35,7 @@ prometheus:
   enabled: true
   image:
     repository: prom/prometheus
-    tag: v2.51.0
+    tag: latest
   port: 9090
   serviceType: LoadBalancer
   scrapeInterval: 5s
@@ -57,7 +57,7 @@ grafana:
   enabled: true
   image:
     repository: grafana/grafana-oss
-    tag: 10.4.1
+    tag: latest
   port: 3000
   serviceType: LoadBalancer
   ## @param grafana.anonymousAuth Enable anonymous admin access (no login required)
@@ -68,8 +68,8 @@ grafana:
   adminPassword: "password"
   resources:
     requests:
-      cpu: 30m
-      memory: 70Mi
+      cpu: 50m
+      memory: 100Mi
     limits:
-      cpu: 200m
-      memory: 130Mi
+      cpu: 500m
+      memory: 250Mi

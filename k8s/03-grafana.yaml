@@ -292,7 +292,7 @@ spec:
     spec:
       containers:
       - name: grafana
-        image: grafana/grafana-oss:10.4.1
+        image: grafana/grafana-oss:latest
         ports:
         - containerPort: 3000
           name: http
@@ -317,11 +317,11 @@ spec:
           value: "/var/lib/grafana/dashboards/demo-app-dashboard.json"
         resources:
           requests:
-            cpu: 30m
-            memory: 70Mi
+            cpu: 50m
+            memory: 100Mi
           limits:
-            cpu: 200m
-            memory: 130Mi
+            cpu: 500m
+            memory: 250Mi
         volumeMounts:
         - name: datasources-volume
           mountPath: /etc/grafana/provisioning/datasources
