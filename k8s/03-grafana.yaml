@@ -313,6 +313,10 @@ spec:
           value: "false"
         - name: GF_ANALYTICS_CHECK_FOR_UPDATES
           value: "false"
+        - name: GF_PLUGINS_PREINSTALL_DISABLED
+          value: "true"
+        - name: GF_PLUGINS_PREINSTALL_AUTO_UPDATE
+          value: "false"
         - name: GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH
           value: "/var/lib/grafana/dashboards/demo-app-dashboard.json"
         resources:
@@ -321,7 +325,7 @@ spec:
             memory: 100Mi
           limits:
             cpu: 500m
-            memory: 250Mi
+            memory: 300Mi
         volumeMounts:
         - name: datasources-volume
           mountPath: /etc/grafana/provisioning/datasources

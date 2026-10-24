@@ -72,4 +72,4 @@ grafana:
       memory: 100Mi
     limits:
       cpu: 500m
-      memory: 250Mi
+      memory: 300Mi
