@@ -328,6 +328,10 @@ spec:
           value: "true"
         - name: GF_PLUGINS_PREINSTALL_AUTO_UPDATE
           value: "false"
+        - name: GF_DATABASE_WAL
+          value: "true"
+        - name: GOMEMLIMIT
+          value: "320MiB"
         - name: GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH
           value: "/var/lib/grafana/dashboards/demo-app-dashboard.json"
         resources:
