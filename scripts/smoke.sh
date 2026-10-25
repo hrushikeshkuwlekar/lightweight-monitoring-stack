@@ -13,8 +13,8 @@ PASS=0
 FAIL=0
 ERRORS=()
 
-pass() { echo "  [PASS] $1"; ((PASS++)); }
-fail() { echo "  [FAIL] $1"; ERRORS+=("$1"); ((FAIL++)); }
+pass() { echo "  [PASS] $1"; PASS=$((PASS + 1)); }
+fail() { echo "  [FAIL] $1"; ERRORS+=("$1"); FAIL=$((FAIL + 1)); }
 
 wait_pods() {
   local ns="$1"
