@@ -73,14 +73,21 @@ else
   fail "Pods did not become Ready within 120s"
 fi
 
+# HTTP GET from inside a pod — uses python3 which both images include
+# (wget is not installed in python:3.11-slim).
+pod_get() {
+  local ns="$1" pod="$2" url="$3"
+  kubectl exec -n "$ns" "$pod" -- python3 -c "import urllib.request,sys; sys.stdout.write(urllib.request.urlopen('$url', timeout=5).read().decode())" 2>/dev/null
+}
+
 # ── 2. demo-app /metrics ──────────────────────────────────────────────────────
 echo "2. demo-app /metrics"
 DEMO_APP_POD=$(kubectl get pod -n "$NS_APP" -l app=demo-app -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
 if [[ -n "$DEMO_APP_POD" ]]; then
-  # Prime the counter: http_requests_total is lazily created on first scrape of a
+  # Prime the counter: http_requests_total is lazily emitted after first
   # labeled request, so hit /healthz once before reading /metrics.
-  kubectl exec -n "$NS_APP" "$DEMO_APP_POD" -- wget -qO- http://localhost:8000/healthz >/dev/null 2>&1 || true
-  if kubectl exec -n "$NS_APP" "$DEMO_APP_POD" -- wget -qO- http://localhost:8000/metrics 2>/dev/null | grep -q 'http_requests_total'; then
+  pod_get "$NS_APP" "$DEMO_APP_POD" "http://localhost:8000/healthz" >/dev/null 2>&1 || true
+  if pod_get "$NS_APP" "$DEMO_APP_POD" "http://localhost:8000/metrics" | grep -q 'http_requests_total'; then
     pass "demo-app /metrics reachable and includes http_requests_total"
   else
     fail "demo-app /metrics missing http_requests_total"
@@ -95,7 +102,7 @@ LG_POD=$(kubectl get pod -n "$NS_APP" -l app=load-generator -o jsonpath='{.items
 if [[ -n "$LG_POD" ]]; then
   LG_OK="no"
   for i in 1 2 3 4 5; do
-    if kubectl exec -n "$NS_APP" "$LG_POD" -- wget -qO- http://localhost:8089/health 2>/dev/null | grep -q '"status"'; then
+    if pod_get "$NS_APP" "$LG_POD" "http://localhost:8089/health" | grep -q '"status"'; then
       LG_OK="yes"; break
     fi
     sleep 2
