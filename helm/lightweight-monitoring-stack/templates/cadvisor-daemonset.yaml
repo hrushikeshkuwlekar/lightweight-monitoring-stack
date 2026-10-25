@@ -18,6 +18,7 @@ spec:
         app: cadvisor
     spec:
       hostNetwork: false
+      automountServiceAccountToken: false
       tolerations:
         - operator: Exists
       containers:
