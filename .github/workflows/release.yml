@@ -113,10 +113,16 @@ jobs:
           helm package helm/lightweight-monitoring-stack \
             --destination .helm-packages
 
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
       - name: Publish Helm chart to GitHub Pages
         uses: helm/chart-releaser-action@v1.6.0
         with:
           charts_dir: helm
           pages_branch: gh-pages
+          config: .cr.yaml
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"

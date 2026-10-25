@@ -1,0 +1,6 @@
+owner: hrushikeshkuwlekar
+git-repo: lightweight-monitoring-stack
+charts-dir: helm
+pages-branch: gh-pages
+skip-existing: true
+packages-with-index: true
