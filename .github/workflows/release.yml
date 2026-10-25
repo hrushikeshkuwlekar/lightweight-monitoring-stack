@@ -95,34 +95,51 @@ jobs:
 
   # ─────────────────────────────────────────────────
   # Job 2: Package Helm chart and publish to GH Pages
+  # Deterministic + self-healing: repackages the current chart, drops it
+  # into gh-pages alongside existing packages, and regenerates the full
+  # index.yaml from every .tgz present. No tag-diff discovery.
   # ─────────────────────────────────────────────────
   helm:
     runs-on: ubuntu-latest
     needs: docker
+    concurrency:
+      group: helm-pages-publish
+      cancel-in-progress: false
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Install Helm
         uses: azure/setup-helm@v4
 
-      - name: Package Helm chart
+      - name: Package chart and publish to GitHub Pages
+        env:
+          REPO_URL: https://hrushikeshkuwlekar.github.io/lightweight-monitoring-stack
         run: |
-          helm package helm/lightweight-monitoring-stack \
-            --destination .helm-packages
+          set -euo pipefail
 
-      - name: Configure Git
-        run: |
+          # Package the current chart version
+          mkdir -p .deploy
+          helm package helm/lightweight-monitoring-stack --destination .deploy
+
+          # Mount the existing gh-pages branch in a worktree
+          git fetch origin gh-pages
+          git worktree add gh-pages origin/gh-pages
+
+          # Add freshly packaged chart(s), overwriting a same-version package
+          cp -f .deploy/*.tgz gh-pages/
+
+          # Rebuild the repo index from ALL packages present (self-healing:
+          # prunes stale entries, restores any missing URLs)
+          helm repo index gh-pages --url "$REPO_URL"
+
+          cd gh-pages
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-
-      - name: Publish Helm chart to GitHub Pages
-        uses: helm/chart-releaser-action@v1.6.0
-        with:
-          charts_dir: helm
-          pages_branch: gh-pages
-          config: .cr.yaml
-        env:
-          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No chart changes to publish."
+          else
+            git commit -m "Publish Helm chart packages and regenerate index"
+            git push origin HEAD:gh-pages
+          fi
