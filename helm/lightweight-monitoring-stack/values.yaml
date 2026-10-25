@@ -29,6 +29,33 @@ demoApp:
     initialDelaySeconds: 2
     periodSeconds: 5
 
+## @section Load Generator parameters
+loadGenerator:
+  ## @param loadGenerator.enabled Enable Load Generator deployment
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ghcr.io/hrushikeshkuwlekar/lightweight-monitoring-stack-loadgen
+    tag: ""
+    pullPolicy: IfNotPresent
+  port: 8089
+  serviceType: LoadBalancer
+  resources:
+    requests:
+      cpu: 20m
+      memory: 40Mi
+    limits:
+      cpu: 200m
+      memory: 100Mi
+  livenessProbe:
+    path: /health
+    initialDelaySeconds: 3
+    periodSeconds: 10
+  readinessProbe:
+    path: /health
+    initialDelaySeconds: 2
+    periodSeconds: 5
+
 ## @section Prometheus parameters
 prometheus:
   ## @param prometheus.enabled Enable Prometheus deployment

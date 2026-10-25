@@ -1,0 +1,66 @@
+{{- if .Values.loadGenerator.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: load-generator
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: load-generator
+    {{- include "lightweight-monitoring-stack.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.loadGenerator.replicaCount }}
+  selector:
+    matchLabels:
+      app: load-generator
+  template:
+    metadata:
+      labels:
+        app: load-generator
+    spec:
+      containers:
+      - name: load-generator
+        image: "{{ .Values.loadGenerator.image.repository }}:{{ .Values.loadGenerator.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.loadGenerator.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.loadGenerator.port }}
+          name: http
+        env:
+        - name: TARGET_URL
+          value: "http://demo-app-svc:{{ .Values.demoApp.port }}"
+        resources:
+          requests:
+            cpu: {{ .Values.loadGenerator.resources.requests.cpu }}
+            memory: {{ .Values.loadGenerator.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.loadGenerator.resources.limits.cpu }}
+            memory: {{ .Values.loadGenerator.resources.limits.memory }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.loadGenerator.livenessProbe.path }}
+            port: {{ .Values.loadGenerator.port }}
+          initialDelaySeconds: {{ .Values.loadGenerator.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.loadGenerator.livenessProbe.periodSeconds }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.loadGenerator.readinessProbe.path }}
+            port: {{ .Values.loadGenerator.port }}
+          initialDelaySeconds: {{ .Values.loadGenerator.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.loadGenerator.readinessProbe.periodSeconds }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: load-generator-svc
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: load-generator
+    {{- include "lightweight-monitoring-stack.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.loadGenerator.serviceType }}
+  ports:
+  - port: {{ .Values.loadGenerator.port }}
+    targetPort: {{ .Values.loadGenerator.port }}
+    name: http
+  selector:
+    app: load-generator
+{{- end }}

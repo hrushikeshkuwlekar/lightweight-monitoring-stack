@@ -21,6 +21,14 @@ data:
               app: 'demo-app'
               environment: 'local-laptop'
 
+      - job_name: 'load-generator'
+        metrics_path: '/metrics'
+        static_configs:
+          - targets: ['load-generator-svc:8089']
+            labels:
+              app: 'load-generator'
+              environment: 'local-laptop'
+
       - job_name: 'prometheus'
         static_configs:
           - targets: ['localhost:9090']
@@ -46,6 +54,15 @@ data:
             annotations:
               summary: "p95 Latency spike (>800ms)"
               description: "App response time is degraded."
+
+          - alert: LoadGenHighErrorRate
+            expr: sum(rate(loadgen_errors_total[1m])) / sum(rate(loadgen_requests_total[1m])) > 0.15
+            for: 20s
+            labels:
+              severity: warning
+            annotations:
+              summary: "Load Generator reports elevated failure rate (>15%)"
+              description: "Client-side errors exceed threshold during load test."
 ---
 apiVersion: apps/v1
 kind: Deployment

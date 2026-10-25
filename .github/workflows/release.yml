@@ -1,10 +1,11 @@
 # =============================================================================
-# CI/CD: Build Docker image → Push to GHCR → Package Helm chart → Publish to GH Pages
+# CI/CD: Build Docker images → Push to GHCR → Package Helm chart → Publish to GH Pages
 # =============================================================================
 # Triggers on push to 'main' branch or tag creation (v*)
 # Produces:
-#   1. Docker image at ghcr.io/hrushikeshkuwlekar/lightweight-monitoring-stack:<tag>
-#   2. Helm chart hosted on GitHub Pages (gh-pages branch)
+#   1. App Docker image: ghcr.io/<repo>:<tag>
+#   2. Load Generator Docker image: ghcr.io/<repo>-loadgen:<tag>
+#   3. Helm chart hosted on GitHub Pages (gh-pages branch)
 # =============================================================================
 name: Release
 
@@ -24,7 +25,7 @@ permissions:
 
 jobs:
   # ─────────────────────────────────────────────────
-  # Job 1: Build and push multi-arch Docker image
+  # Job 1: Build and push multi-arch Docker images
   # ─────────────────────────────────────────────────
   docker:
     runs-on: ubuntu-latest
@@ -44,7 +45,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Docker metadata
+      # --- Demo App Image ---
+      - name: Docker metadata (demo-app)
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -55,7 +57,7 @@ jobs:
             type=sha,prefix=
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Build and push
+      - name: Build and push (demo-app)
         uses: docker/build-push-action@v5
         with:
           context: ./app
@@ -64,6 +66,30 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # --- Load Generator Image ---
+      - name: Docker metadata (load-generator)
+        id: meta_loadgen
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-loadgen
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push (load-generator)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./load-generator
+          file: ./load-generator/Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta_loadgen.outputs.tags }}
+          labels: ${{ steps.meta_loadgen.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

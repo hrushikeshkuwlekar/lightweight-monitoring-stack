@@ -1,0 +1,31 @@
+groups:
+  - name: demo-app-alerts
+    rules:
+      - alert: HighErrorRate
+        expr: sum(rate(http_requests_total{status_code=~"5.*"}[1m])) / sum(rate(http_requests_total[1m])) > 0.1
+        for: 15s
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate detected (>10% 5xx errors)"
+          description: "App error rate exceeded threshold."
+
+      - alert: LatencySpike
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[1m])) by (le)) > 0.8
+        for: 15s
+        labels:
+          severity: warning
+        annotations:
+          summary: "p95 Latency spike (>800ms)"
+          description: "App response time is degraded."
+
+  - name: load-generator-alerts
+    rules:
+      - alert: LoadGenHighErrorRate
+        expr: sum(rate(loadgen_errors_total[1m])) / sum(rate(loadgen_requests_total[1m])) > 0.15
+        for: 20s
+        labels:
+          severity: warning
+        annotations:
+          summary: "Load Generator reports elevated failure rate (>15%)"
+          description: "Client-side errors exceed threshold during load test."

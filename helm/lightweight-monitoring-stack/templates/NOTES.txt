@@ -1,7 +1,7 @@
 🚀 Lightweight Monitoring Stack has been deployed!
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  Total estimated RAM: ~120 MB  |  CPU: < 0.05 cores
+  Total estimated RAM: ~220 MB  |  CPU: < 0.08 cores
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 📋 Check pod status:
@@ -10,22 +10,28 @@
 
 🌐 Access the services:
 
-  Demo App:    kubectl port-forward svc/demo-app-svc    -n {{ .Release.Namespace }} 8000:{{ .Values.demoApp.port }}
+  Demo App:       kubectl port-forward svc/demo-app-svc       -n {{ .Release.Namespace }} 8000:{{ .Values.demoApp.port }}
+{{- if .Values.loadGenerator.enabled }}
+  Load Generator: kubectl port-forward svc/load-generator-svc  -n {{ .Release.Namespace }} 8089:{{ .Values.loadGenerator.port }}
+{{- end }}
 {{- if .Values.grafana.enabled }}
-  Grafana:     kubectl port-forward svc/grafana-svc      -n {{ .Release.Namespace }} 3000:{{ .Values.grafana.port }}
+  Grafana:        kubectl port-forward svc/grafana-svc         -n {{ .Release.Namespace }} 3000:{{ .Values.grafana.port }}
 {{- end }}
 {{- if .Values.prometheus.enabled }}
-  Prometheus:  kubectl port-forward svc/prometheus-svc   -n {{ .Release.Namespace }} 9090:{{ .Values.prometheus.port }}
+  Prometheus:     kubectl port-forward svc/prometheus-svc      -n {{ .Release.Namespace }} 9090:{{ .Values.prometheus.port }}
 {{- end }}
 
 Then open in your browser:
-  • Demo App  → http://localhost:8000
+  • Demo App        → http://localhost:8000
+{{- if .Values.loadGenerator.enabled }}
+  • Load Generator  → http://localhost:8089 (TPS & Concurrency Controller)
+{{- end }}
 {{- if .Values.grafana.enabled }}
-  • Grafana   → http://localhost:3000  (login-less Admin access enabled; credentials: admin / password)
+  • Grafana         → http://localhost:3000 (pre-provisioned App & TPS Dashboards)
 {{- end }}
 {{- if .Values.prometheus.enabled }}
-  • Prometheus→ http://localhost:9090
+  • Prometheus      → http://localhost:9090
 {{- end }}
 
-💡 Toggle the background traffic generator:
-  curl -X POST http://localhost:8000/api/simulator/toggle
+💡 Trigger load via CLI:
+  curl -X POST http://localhost:8089/api/scenarios/steady-state/run

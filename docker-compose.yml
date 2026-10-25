@@ -19,6 +19,28 @@ services:
           cpus: "0.05"
           memory: 40M
 
+  load-generator:
+    build:
+      context: ./load-generator
+      dockerfile: Dockerfile
+    image: load-generator:v1
+    container_name: load-generator
+    environment:
+      - TARGET_URL=http://demo-app:8000
+    ports:
+      - "8089:8089"
+    depends_on:
+      - demo-app
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.30"
+          memory: 100M
+        reservations:
+          cpus: "0.05"
+          memory: 50M
+
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
