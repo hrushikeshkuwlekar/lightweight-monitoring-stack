@@ -30,6 +30,15 @@ jobs:
           cluster_name: lms-ci
           wait: 60s
 
+      - name: Build app images locally
+        run: |
+          docker build -t demo-app:ci ./app
+          docker build -t load-generator:ci ./load-generator
+
+      - name: Load images into kind
+        run: |
+          kind load docker-image demo-app:ci load-generator:ci --name lms-ci
+
       - name: Baseline — node and pod resource snapshot
         run: |
           echo "=== nodes ==="
@@ -41,6 +50,12 @@ jobs:
         run: |
           helm install demo ./helm/lightweight-monitoring-stack \
             --set profile=laptop \
+            --set demoApp.image.repository=demo-app \
+            --set demoApp.image.tag=ci \
+            --set demoApp.image.pullPolicy=Never \
+            --set loadGenerator.image.repository=load-generator \
+            --set loadGenerator.image.tag=ci \
+            --set loadGenerator.image.pullPolicy=Never \
             --create-namespace \
             --wait \
             --timeout 5m
