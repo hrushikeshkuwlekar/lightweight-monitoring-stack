@@ -2,6 +2,33 @@ apiVersion: v1
 entries:
   lightweight-monitoring-stack:
   - apiVersion: v2
+    appVersion: 2.1.0
+    created: "2026-10-25T13:32:38.042269301Z"
+    description: Ultra-low resource monitoring stack with dedicated async load generator
+      (~220 MB RAM total). Deploys a FastAPI demo app with Prometheus metrics, standalone
+      TPS load generator, Prometheus, and pre-provisioned Grafana dashboards — perfect
+      for laptop demos.
+    digest: 9090b93d27d68365e41d86829a86e0e5f29dec568b934a220824fccc308a1628
+    home: https://github.com/hrushikeshkuwlekar/lightweight-monitoring-stack
+    icon: https://raw.githubusercontent.com/prometheus/prometheus/main/documentation/images/prometheus-logo.svg
+    keywords:
+    - monitoring
+    - prometheus
+    - grafana
+    - load-generator
+    - tps
+    - demo
+    - lightweight
+    - observability
+    maintainers:
+    - name: Hrushikesh Kuwlekar
+      url: https://github.com/hrushikeshkuwlekar
+    name: lightweight-monitoring-stack
+    type: application
+    urls:
+    - lightweight-monitoring-stack-2.1.0.tgz
+    version: 2.1.0
+  - apiVersion: v2
     appVersion: 2.0.0
     created: "2026-10-25T17:08:43.569906+05:30"
     description: Ultra-low resource monitoring stack with dedicated async load generator
@@ -124,4 +151,4 @@ entries:
     urls:
     - https://hrushikeshkuwlekar.github.io/lightweight-monitoring-stack/lightweight-monitoring-stack-0.1.0.tgz
     version: 0.1.0
-generated: "2026-10-25T17:08:43.567178+05:30"
+generated: "2026-10-25T13:32:38.042283592Z"
