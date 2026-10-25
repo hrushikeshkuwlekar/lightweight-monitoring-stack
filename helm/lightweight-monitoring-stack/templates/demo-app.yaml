@@ -18,8 +18,10 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+        {{- if not .Values.openshift }}
         runAsUser: 10001
         fsGroup: 10001
+        {{- end }}
       containers:
       - name: demo-app
         image: "{{ .Values.demoApp.image.repository }}:{{ include "lightweight-monitoring-stack.appImageTag" . }}"
@@ -31,12 +33,7 @@ spec:
         - containerPort: {{ .Values.demoApp.port }}
           name: http
         resources:
-          requests:
-            cpu: {{ .Values.demoApp.resources.requests.cpu }}
-            memory: {{ .Values.demoApp.resources.requests.memory }}
-          limits:
-            cpu: {{ .Values.demoApp.resources.limits.cpu }}
-            memory: {{ .Values.demoApp.resources.limits.memory }}
+          {{- include "lightweight-monitoring-stack.resources" (dict "ctx" . "component" "demoApp") | nindent 10 }}
         livenessProbe:
           httpGet:
             path: {{ .Values.demoApp.livenessProbe.path }}

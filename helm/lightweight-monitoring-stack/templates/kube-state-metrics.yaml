@@ -80,8 +80,10 @@ spec:
       serviceAccountName: kube-state-metrics
       securityContext:
         runAsNonRoot: true
+        {{- if not .Values.openshift }}
         runAsUser: 65534
         fsGroup: 65534
+        {{- end }}
       containers:
       - name: kube-state-metrics
         securityContext:
@@ -96,12 +98,7 @@ spec:
         - containerPort: 8081
           name: telemetry
         resources:
-          requests:
-            cpu: {{ .Values.kubeStateMetrics.resources.requests.cpu }}
-            memory: {{ .Values.kubeStateMetrics.resources.requests.memory }}
-          limits:
-            cpu: {{ .Values.kubeStateMetrics.resources.limits.cpu }}
-            memory: {{ .Values.kubeStateMetrics.resources.limits.memory }}
+          {{- include "lightweight-monitoring-stack.resources" (dict "ctx" . "component" "kubeStateMetrics") | nindent 10 }}
         livenessProbe:
           httpGet:
             path: /healthz

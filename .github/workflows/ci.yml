@@ -95,6 +95,19 @@ jobs:
           kubectl get events -n app --sort-by='.lastTimestamp' | tail -20
 
   # ─────────────────────────────────────────────────────────────────────────
+  # Chart drift check — ensure k8s/generated.yaml tracks the Helm chart
+  # ─────────────────────────────────────────────────────────────────────────
+  chart-drift:
+    name: k8s/ drift check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+      - name: Verify k8s/generated.yaml is up to date
+        run: make k8s-check
+
+  # ─────────────────────────────────────────────────────────────────────────
   # Smoke test via Docker Compose (no Kubernetes required)
   # ─────────────────────────────────────────────────────────────────────────
   smoke-compose:

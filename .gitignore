@@ -27,3 +27,4 @@ helm/lightweight-monitoring-stack/charts/
 # Misc
 *.log
 .env
+.make/

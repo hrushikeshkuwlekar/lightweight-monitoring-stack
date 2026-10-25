@@ -19,8 +19,10 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+        {{- if not .Values.openshift }}
         runAsUser: 10001
         fsGroup: 10001
+        {{- end }}
       containers:
       - name: load-generator
         image: "{{ .Values.loadGenerator.image.repository }}:{{ .Values.loadGenerator.image.tag | default .Chart.AppVersion }}"
@@ -35,12 +37,7 @@ spec:
         - name: TARGET_URL
           value: "http://demo-app-svc.{{ .Values.namespaces.app | default .Release.Namespace }}:{{ .Values.demoApp.port }}"
         resources:
-          requests:
-            cpu: {{ .Values.loadGenerator.resources.requests.cpu }}
-            memory: {{ .Values.loadGenerator.resources.requests.memory }}
-          limits:
-            cpu: {{ .Values.loadGenerator.resources.limits.cpu }}
-            memory: {{ .Values.loadGenerator.resources.limits.memory }}
+          {{- include "lightweight-monitoring-stack.resources" (dict "ctx" . "component" "loadGenerator") | nindent 10 }}
         livenessProbe:
           httpGet:
             path: {{ .Values.loadGenerator.livenessProbe.path }}

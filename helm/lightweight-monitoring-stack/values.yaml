@@ -21,6 +21,27 @@ nodeMetrics:
 ## grafana anonymousAuth=true, and expose via LoadBalancer.
 profile: ""
 
+## @section Size preset
+## @param size One of: "" (default — use the per-component resources below),
+##             nano (smallest demo footprint), small (default demo), standard
+##             (production-ish). A non-empty size overrides per-component
+##             resources; profile=laptop implies size=small.
+size: ""
+
+## @section OpenShift compatibility
+## When true, drops runAsUser/fsGroup from Pod securityContext so OpenShift
+## can assign a UID from the namespace's allocated range (restricted SCC).
+openshift: false
+
+## @section Pod Security Admission labels on namespaces (Phase 2 hardening)
+podSecurity:
+  ## @param podSecurity.enforce Add pod-security.kubernetes.io/enforce labels to created namespaces.
+  enforce: true
+  ## @param podSecurity.level One of: privileged, baseline, restricted.
+  level: restricted
+  ## @param podSecurity.version Kubernetes PSA policy version to pin.
+  version: latest
+
 ## @section Namespaces configuration
 namespaces:
   ## @param namespaces.create Create namespaces automatically
@@ -130,6 +151,11 @@ prometheus:
   serviceType: ClusterIP
   scrapeInterval: 5s
   evaluationInterval: 5s
+  ## @param prometheus.infraScrapeInterval Scrape interval for infra targets
+  ## (Prometheus self, kube-state-metrics, node metrics). App targets stay at
+  ## scrapeInterval. Separating these keeps TSDB cardinality in check while
+  ## leaving the demo-app's 5s cadence for live dashboards.
+  infraScrapeInterval: 15s
   retention:
     time: 2h
     size: 100MB
@@ -140,6 +166,21 @@ prometheus:
     limits:
       cpu: 200m
       memory: 256Mi
+
+## @section cAdvisor DaemonSet (only deployed when nodeMetrics.mode=daemonset)
+cadvisor:
+  image:
+    repository: gcr.io/cadvisor/cadvisor
+    tag: v0.49.1
+  housekeepingInterval: "10s"
+  maxHousekeepingInterval: "15s"
+  resources:
+    requests:
+      cpu: 25m
+      memory: 50Mi
+    limits:
+      cpu: 300m
+      memory: 150Mi
 
 ## @section Grafana parameters
 grafana:

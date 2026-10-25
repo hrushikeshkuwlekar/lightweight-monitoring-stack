@@ -1,0 +1,91 @@
+{{- $mode := include "lightweight-monitoring-stack.nodeMetricsMode" . }}
+{{- if eq $mode "daemonset" }}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: cadvisor
+  namespace: {{ .Values.namespaces.monitoring | default .Release.Namespace }}
+  labels:
+    app: cadvisor
+    {{- include "lightweight-monitoring-stack.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app: cadvisor
+  template:
+    metadata:
+      labels:
+        app: cadvisor
+    spec:
+      hostNetwork: false
+      tolerations:
+        - operator: Exists
+      containers:
+        - name: cadvisor
+          image: "{{ .Values.cadvisor.image.repository }}:{{ .Values.cadvisor.image.tag }}"
+          args:
+            - --housekeeping_interval={{ .Values.cadvisor.housekeepingInterval }}
+            - --max_housekeeping_interval={{ .Values.cadvisor.maxHousekeepingInterval }}
+            - --event_storage_event_limit=default=0
+            - --event_storage_age_limit=default=0
+            - --disable_metrics=accelerator,cpu_topology,disk,memory_numa,tcp,udp,percpu,sched,process,hugetlb,referenced_memory,resctrl,cpuset,advtcp,memory_numa
+            - --store_container_labels=false
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          resources:
+            requests:
+              cpu: {{ .Values.cadvisor.resources.requests.cpu }}
+              memory: {{ .Values.cadvisor.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.cadvisor.resources.limits.cpu }}
+              memory: {{ .Values.cadvisor.resources.limits.memory }}
+          volumeMounts:
+            - name: rootfs
+              mountPath: /rootfs
+              readOnly: true
+            - name: var-run
+              mountPath: /var/run
+              readOnly: true
+            - name: sys
+              mountPath: /sys
+              readOnly: true
+            - name: docker
+              mountPath: /var/lib/docker
+              readOnly: true
+            - name: disk
+              mountPath: /dev/disk
+              readOnly: true
+          securityContext:
+            privileged: true
+      volumes:
+        - name: rootfs
+          hostPath: { path: / }
+        - name: var-run
+          hostPath: { path: /var/run }
+        - name: sys
+          hostPath: { path: /sys }
+        - name: docker
+          hostPath: { path: /var/lib/docker }
+        - name: disk
+          hostPath: { path: /dev/disk }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cadvisor-svc
+  namespace: {{ .Values.namespaces.monitoring | default .Release.Namespace }}
+  labels:
+    app: cadvisor
+    {{- include "lightweight-monitoring-stack.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: cadvisor
+{{- end }}

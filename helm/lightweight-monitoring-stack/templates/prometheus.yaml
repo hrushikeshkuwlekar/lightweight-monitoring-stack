@@ -20,7 +20,7 @@ data:
       - job_name: 'demo-app'
         metrics_path: '/metrics'
         static_configs:
-          - targets: ['demo-app-svc.{{ .Values.namespaces.app | default .Release.Namespace }}.svc.cluster.local:{{ .Values.demoApp.port }}']
+          - targets: ['demo-app-svc.{{ .Values.namespaces.app | default .Release.Namespace }}.svc:{{ .Values.demoApp.port }}']
             labels:
               app: 'demo-app'
               environment: 'helm-deploy'
@@ -30,7 +30,7 @@ data:
       - job_name: 'load-generator'
         metrics_path: '/metrics'
         static_configs:
-          - targets: ['load-generator-svc.{{ .Values.namespaces.app | default .Release.Namespace }}.svc.cluster.local:{{ .Values.loadGenerator.port }}']
+          - targets: ['load-generator-svc.{{ .Values.namespaces.app | default .Release.Namespace }}.svc:{{ .Values.loadGenerator.port }}']
             labels:
               app: 'load-generator'
               environment: 'helm-deploy'
@@ -38,19 +38,22 @@ data:
 {{- end }}
 
       - job_name: 'prometheus'
+        scrape_interval: {{ .Values.prometheus.infraScrapeInterval }}
         static_configs:
           - targets: ['localhost:{{ .Values.prometheus.port }}']
 
 {{- if .Values.kubeStateMetrics.enabled }}
       - job_name: 'kube-state-metrics'
+        scrape_interval: {{ .Values.prometheus.infraScrapeInterval }}
         static_configs:
-          - targets: ['kube-state-metrics-svc.{{ .Values.namespaces.monitoring | default .Release.Namespace }}.svc.cluster.local:8080']
+          - targets: ['kube-state-metrics-svc.{{ .Values.namespaces.monitoring | default .Release.Namespace }}.svc:8080']
 {{- end }}
 
 {{- $mode := include "lightweight-monitoring-stack.nodeMetricsMode" . }}
 
 {{- if eq $mode "apiserver" }}
       - job_name: 'kubelet'
+        scrape_interval: {{ .Values.prometheus.infraScrapeInterval }}
         scheme: https
         tls_config:
           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
@@ -69,6 +72,7 @@ data:
             replacement: /api/v1/nodes/${1}/proxy/metrics
 
       - job_name: 'cadvisor'
+        scrape_interval: {{ .Values.prometheus.infraScrapeInterval }}
         scheme: https
         metrics_path: /metrics/cadvisor
         tls_config:
@@ -90,6 +94,7 @@ data:
 
 {{- if eq $mode "direct" }}
       - job_name: 'kubelet'
+        scrape_interval: {{ .Values.prometheus.infraScrapeInterval }}
         scheme: https
         tls_config:
           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
@@ -102,6 +107,7 @@ data:
             regex: __meta_kubernetes_node_label_(.+)
 
       - job_name: 'cadvisor'
+        scrape_interval: {{ .Values.prometheus.infraScrapeInterval }}
         scheme: https
         metrics_path: /metrics/cadvisor
         tls_config:
@@ -117,6 +123,7 @@ data:
 
 {{- if eq $mode "resource" }}
       - job_name: 'kubelet-resource'
+        scrape_interval: {{ .Values.prometheus.infraScrapeInterval }}
         scheme: https
         metrics_path: /metrics/resource
         tls_config:
@@ -132,8 +139,19 @@ data:
 
 {{- if eq $mode "daemonset" }}
       - job_name: 'cadvisor-daemonset'
-        static_configs:
-          - targets: ['cadvisor-svc.{{ .Values.namespaces.monitoring | default .Release.Namespace }}.svc.cluster.local:8080']
+        scrape_interval: {{ .Values.prometheus.infraScrapeInterval }}
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names: ['{{ .Values.namespaces.monitoring | default .Release.Namespace }}']
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            action: keep
+            regex: cadvisor
+          - source_labels: [__meta_kubernetes_pod_node_name]
+            target_label: node
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
 {{- end }}
 
 {{- if .Values.prometheus.externalTarget }}
@@ -196,8 +214,10 @@ spec:
       serviceAccountName: prometheus
       securityContext:
         runAsNonRoot: true
+        {{- if not .Values.openshift }}
         runAsUser: 65534
         fsGroup: 65534
+        {{- end }}
       containers:
       - name: prometheus
         image: "{{ .Values.prometheus.image.repository }}:{{ .Values.prometheus.image.tag }}"
@@ -217,12 +237,7 @@ spec:
         - containerPort: {{ .Values.prometheus.port }}
           name: web
         resources:
-          requests:
-            cpu: {{ .Values.prometheus.resources.requests.cpu }}
-            memory: {{ .Values.prometheus.resources.requests.memory }}
-          limits:
-            cpu: {{ .Values.prometheus.resources.limits.cpu }}
-            memory: {{ include "lightweight-monitoring-stack.prometheusMemLimit" . }}
+          {{- include "lightweight-monitoring-stack.resources" (dict "ctx" . "component" "prometheus") | nindent 10 }}
         volumeMounts:
         - name: config-volume
           mountPath: /etc/prometheus

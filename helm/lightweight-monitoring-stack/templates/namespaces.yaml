@@ -6,6 +6,10 @@ metadata:
   labels:
     name: {{ .Values.namespaces.app }}
     tier: application
+    {{- if .Values.podSecurity.enforce }}
+    pod-security.kubernetes.io/enforce: {{ .Values.podSecurity.level }}
+    pod-security.kubernetes.io/enforce-version: {{ .Values.podSecurity.version }}
+    {{- end }}
     {{- include "lightweight-monitoring-stack.labels" . | nindent 4 }}
 ---
 apiVersion: v1
@@ -15,5 +19,9 @@ metadata:
   labels:
     name: {{ .Values.namespaces.monitoring }}
     tier: observability
+    {{- if .Values.podSecurity.enforce }}
+    pod-security.kubernetes.io/enforce: {{ .Values.podSecurity.level }}
+    pod-security.kubernetes.io/enforce-version: {{ .Values.podSecurity.version }}
+    {{- end }}
     {{- include "lightweight-monitoring-stack.labels" . | nindent 4 }}
 {{- end }}

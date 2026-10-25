@@ -65,17 +65,6 @@ resource
 {{- end }}
 
 {{/*
-Effective Prometheus memory limit — capped at 256Mi when profile=laptop
-*/}}
-{{- define "lightweight-monitoring-stack.prometheusMemLimit" -}}
-{{- if eq .Values.profile "laptop" -}}
-256Mi
-{{- else -}}
-{{- .Values.prometheus.resources.limits.memory }}
-{{- end -}}
-{{- end }}
-
-{{/*
 Effective Grafana anonymousAuth — forced true when profile=laptop
 */}}
 {{- define "lightweight-monitoring-stack.grafanaAnonymousAuth" -}}
@@ -83,5 +72,68 @@ Effective Grafana anonymousAuth — forced true when profile=laptop
 true
 {{- else -}}
 {{- .Values.grafana.anonymousAuth }}
+{{- end -}}
+{{- end }}
+
+{{/*
+Effective size preset — profile=laptop implies "small" when size is unset.
+*/}}
+{{- define "lightweight-monitoring-stack.size" -}}
+{{- if .Values.size -}}
+{{- .Values.size }}
+{{- else if eq .Values.profile "laptop" -}}
+small
+{{- else -}}
+
+{{- end -}}
+{{- end }}
+
+{{/*
+Render a resources: block for a component honoring the active size preset.
+Falls back to the per-component resources map when size is unset.
+Usage:
+  resources:
+    {{- include "lightweight-monitoring-stack.resources" (dict "ctx" . "component" "prometheus") | nindent 10 }}
+*/}}
+{{- define "lightweight-monitoring-stack.resources" -}}
+{{- $ctx := .ctx -}}
+{{- $component := .component -}}
+{{- $size := include "lightweight-monitoring-stack.size" $ctx -}}
+{{- $presets := dict
+    "nano" (dict
+      "demoApp"           (dict "req" (dict "cpu" "10m" "memory" "25Mi") "lim" (dict "cpu" "50m"  "memory" "60Mi"))
+      "loadGenerator"     (dict "req" (dict "cpu" "10m" "memory" "25Mi") "lim" (dict "cpu" "100m" "memory" "60Mi"))
+      "prometheus"        (dict "req" (dict "cpu" "20m" "memory" "40Mi") "lim" (dict "cpu" "150m" "memory" "180Mi"))
+      "grafana"           (dict "req" (dict "cpu" "30m" "memory" "70Mi") "lim" (dict "cpu" "300m" "memory" "260Mi"))
+      "kubeStateMetrics"  (dict "req" (dict "cpu" "10m" "memory" "20Mi") "lim" (dict "cpu" "80m"  "memory" "48Mi")))
+    "small" (dict
+      "demoApp"           (dict "req" (dict "cpu" "20m" "memory" "40Mi") "lim" (dict "cpu" "100m" "memory" "80Mi"))
+      "loadGenerator"     (dict "req" (dict "cpu" "20m" "memory" "40Mi") "lim" (dict "cpu" "200m" "memory" "100Mi"))
+      "prometheus"        (dict "req" (dict "cpu" "30m" "memory" "60Mi") "lim" (dict "cpu" "200m" "memory" "256Mi"))
+      "grafana"           (dict "req" (dict "cpu" "50m" "memory" "100Mi") "lim" (dict "cpu" "500m" "memory" "400Mi"))
+      "kubeStateMetrics"  (dict "req" (dict "cpu" "10m" "memory" "32Mi") "lim" (dict "cpu" "100m" "memory" "64Mi")))
+    "standard" (dict
+      "demoApp"           (dict "req" (dict "cpu" "50m"  "memory" "80Mi")  "lim" (dict "cpu" "500m" "memory" "200Mi"))
+      "loadGenerator"     (dict "req" (dict "cpu" "50m"  "memory" "80Mi")  "lim" (dict "cpu" "500m" "memory" "200Mi"))
+      "prometheus"        (dict "req" (dict "cpu" "100m" "memory" "256Mi") "lim" (dict "cpu" "1"    "memory" "1Gi"))
+      "grafana"           (dict "req" (dict "cpu" "100m" "memory" "200Mi") "lim" (dict "cpu" "1"    "memory" "600Mi"))
+      "kubeStateMetrics"  (dict "req" (dict "cpu" "25m"  "memory" "64Mi")  "lim" (dict "cpu" "200m" "memory" "128Mi")))
+}}
+{{- if hasKey $presets $size -}}
+{{- $preset := index (index $presets $size) $component -}}
+requests:
+  cpu: {{ $preset.req.cpu }}
+  memory: {{ $preset.req.memory }}
+limits:
+  cpu: {{ $preset.lim.cpu }}
+  memory: {{ $preset.lim.memory }}
+{{- else -}}
+{{- $r := index $ctx.Values $component "resources" -}}
+requests:
+  cpu: {{ $r.requests.cpu }}
+  memory: {{ $r.requests.memory }}
+limits:
+  cpu: {{ $r.limits.cpu }}
+  memory: {{ $r.limits.memory }}
 {{- end -}}
 {{- end }}
