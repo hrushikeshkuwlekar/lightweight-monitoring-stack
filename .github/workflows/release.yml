@@ -143,3 +143,32 @@ jobs:
             git commit -m "Publish Helm chart packages and regenerate index"
             git push origin HEAD:gh-pages
           fi
+
+      - name: Create GitHub Release (tag pushes only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF#refs/tags/}"
+          CHART_TGZ=$(ls .deploy/*.tgz | head -1)
+          CHART_VERSION="${TAG#v}"
+          # Idempotent: create if missing, otherwise just upload the asset.
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; uploading chart asset."
+            gh release upload "$TAG" "$CHART_TGZ" --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" "$CHART_TGZ" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "$TAG" \
+              --notes "Lightweight Monitoring Stack chart \`$CHART_VERSION\`.
+
+Install:
+\`\`\`
+helm repo add lightweight-monitoring https://hrushikeshkuwlekar.github.io/lightweight-monitoring-stack/
+helm repo update
+helm install demo lightweight-monitoring/lightweight-monitoring-stack --version $CHART_VERSION
+\`\`\`
+
+See the commit log for what changed in this version."
+          fi
