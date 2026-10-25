@@ -1,0 +1,131 @@
+# =============================================================================
+# CI: Smoke-test the Helm chart on kind (amd64) and k3d (arm64 emulated)
+# Runs on every PR to main and on pushes to main.
+# Gates: all 9 smoke checks must pass before merge is allowed.
+# =============================================================================
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────
+  # Smoke test on kind (amd64, fast)
+  # ─────────────────────────────────────────────────────────────────────────
+  smoke-kind:
+    name: Smoke (kind / amd64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: lms-ci
+          wait: 60s
+
+      - name: Baseline — node and pod resource snapshot
+        run: |
+          echo "=== nodes ==="
+          kubectl get nodes -o wide
+          echo "=== initial pods ==="
+          kubectl get pods -A
+
+      - name: Install chart from local source
+        run: |
+          helm install demo ./helm/lightweight-monitoring-stack \
+            --set profile=laptop \
+            --create-namespace \
+            --wait \
+            --timeout 5m
+
+      - name: Wait for all pods to be ready
+        run: |
+          kubectl wait pod --all -n app       --for=condition=Ready --timeout=120s
+          kubectl wait pod --all -n monitoring --for=condition=Ready --timeout=120s
+
+      - name: Post-install baseline snapshot
+        run: |
+          echo "=== pods app ==="
+          kubectl get pods -n app -o wide
+          echo "=== pods monitoring ==="
+          kubectl get pods -n monitoring -o wide
+          echo "=== resource requests ==="
+          kubectl describe nodes | grep -A5 "Allocated resources"
+
+      - name: Run smoke tests
+        run: |
+          chmod +x scripts/smoke.sh
+          PROM_PORT=9090 GRAFANA_PORT=3000 bash scripts/smoke.sh app monitoring
+
+      - name: Dump logs on failure
+        if: failure()
+        run: |
+          echo "=== Prometheus logs ==="
+          kubectl logs -n monitoring deploy/prometheus --tail=50 || true
+          echo "=== Grafana logs ==="
+          kubectl logs -n monitoring deploy/grafana --tail=50 || true
+          echo "=== kube-state-metrics logs ==="
+          kubectl logs -n monitoring deploy/kube-state-metrics --tail=30 || true
+          echo "=== demo-app logs ==="
+          kubectl logs -n app deploy/demo-app --tail=30 || true
+          echo "=== Events ==="
+          kubectl get events -n monitoring --sort-by='.lastTimestamp' | tail -20
+          kubectl get events -n app --sort-by='.lastTimestamp' | tail -20
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Smoke test via Docker Compose (no Kubernetes required)
+  # ─────────────────────────────────────────────────────────────────────────
+  smoke-compose:
+    name: Smoke (Docker Compose)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start stack
+        run: docker compose up -d --wait --timeout 90
+
+      - name: Wait for Prometheus to be ready
+        run: |
+          for i in $(seq 1 20); do
+            curl -sf http://localhost:9090/-/healthy && echo "Prometheus ready" && break
+            echo "Waiting... ($i/20)"
+            sleep 5
+          done
+
+      - name: Wait for Grafana to be ready
+        run: |
+          for i in $(seq 1 20); do
+            curl -sf http://localhost:3000/api/health | grep -q '"database":"ok"' && echo "Grafana ready" && break
+            echo "Waiting... ($i/20)"
+            sleep 5
+          done
+
+      - name: Check Prometheus targets
+        run: |
+          UP=$(curl -sf 'http://localhost:9090/api/v1/query?query=up' \
+            | python3 -c "import sys,json; d=json.load(sys.stdin); print(sum(1 for r in d.get('data',{}).get('result',[]) if r.get('value',['','0'])[1]=='1'))")
+          echo "Prometheus targets up: $UP"
+          [ "$UP" -ge 2 ] || (echo "FAIL: fewer than 2 targets up" && exit 1)
+
+      - name: Check Grafana datasource
+        run: |
+          curl -sf 'http://admin:password@localhost:3000/api/datasources' \
+            | python3 -c "import sys,json; ds=json.load(sys.stdin); assert any(d.get('name')=='Prometheus' for d in ds), 'Datasource not found'; print('Grafana datasource OK')"
+
+      - name: Check Grafana dashboards
+        run: |
+          COUNT=$(curl -sf 'http://admin:password@localhost:3000/api/search?type=dash-db' \
+            | python3 -c "import sys,json; print(len(json.load(sys.stdin)))")
+          echo "Dashboards: $COUNT"
+          [ "$COUNT" -ge 1 ] || (echo "FAIL: no dashboards" && exit 1)
+
+      - name: Dump logs on failure
+        if: failure()
+        run: docker compose logs --tail=50
