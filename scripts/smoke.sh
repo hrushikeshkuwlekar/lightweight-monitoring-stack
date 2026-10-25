@@ -164,9 +164,35 @@ else
   fail "A pod has $MAX_RESTARTS restarts — possible crash loop"
 fi
 
-# ── 10. nodeMetrics mode (optional — only runs when NODE_METRICS_MODE is set) ─
+# ── 10. Security posture (optional — only runs when CHECK_SECURITY=1) ─────────
+if [[ "${CHECK_SECURITY:-}" == "1" ]]; then
+  echo "10. Security posture"
+
+  # 10a. No pod running as root (UID 0)
+  ROOT_PODS=$(kubectl get pods -n "$NS_APP" -n "$NS_MON" -o jsonpath='{range .items[*]}{.metadata.name}{"/"}{range .spec.containers[*]}{.securityContext.runAsUser}{" "}{end}{"\n"}{end}' 2>/dev/null \
+    | grep -c "^[^/]*/0 " || true)
+  if [[ "${ROOT_PODS:-0}" -eq 0 ]]; then
+    pass "No pod container running as UID 0"
+  else
+    fail "$ROOT_PODS pod container(s) running as UID 0"
+  fi
+
+  # 10b. Grafana anonymous access disabled (if not laptop profile)
+  if [[ "${ANONYMOUS_AUTH:-}" != "true" ]]; then
+    ANON=$(curl -sf "http://localhost:${GRAFANA_PORT}/api/dashboards/home" 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print('ok')" 2>/dev/null || echo "blocked")
+    if [[ "$ANON" == "blocked" ]]; then
+      pass "Grafana anonymous access is disabled (unauthenticated request blocked)"
+    else
+      fail "Grafana anonymous access is enabled — unauthenticated request succeeded"
+    fi
+  else
+    pass "Grafana anonymous auth check skipped (ANONYMOUS_AUTH=true)"
+  fi
+fi
+
+# ── 11. nodeMetrics mode (optional — only runs when NODE_METRICS_MODE is set) ─
 if [[ -n "${NODE_METRICS_MODE:-}" ]]; then
-  echo "10. nodeMetrics mode: $NODE_METRICS_MODE"
+  echo "11. nodeMetrics mode: $NODE_METRICS_MODE"
   case "$NODE_METRICS_MODE" in
     resource)
       COUNT=$(curl -sf "http://localhost:${PROM_PORT}/api/v1/query?query=container_cpu_usage_seconds_total" 2>/dev/null \

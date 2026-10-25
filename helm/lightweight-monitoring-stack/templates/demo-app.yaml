@@ -16,9 +16,16 @@ spec:
       labels:
         app: demo-app
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
       containers:
       - name: demo-app
         image: "{{ .Values.demoApp.image.repository }}:{{ include "lightweight-monitoring-stack.appImageTag" . }}"
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
         imagePullPolicy: {{ .Values.demoApp.image.pullPolicy }}
         ports:
         - containerPort: {{ .Values.demoApp.port }}

@@ -17,9 +17,16 @@ spec:
       labels:
         app: load-generator
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
       containers:
       - name: load-generator
         image: "{{ .Values.loadGenerator.image.repository }}:{{ .Values.loadGenerator.image.tag | default .Chart.AppVersion }}"
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
         imagePullPolicy: {{ .Values.loadGenerator.image.pullPolicy }}
         ports:
         - containerPort: {{ .Values.loadGenerator.port }}

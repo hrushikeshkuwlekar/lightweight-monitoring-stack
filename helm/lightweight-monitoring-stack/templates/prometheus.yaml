@@ -136,6 +136,14 @@ data:
           - targets: ['cadvisor-svc.{{ .Values.namespaces.monitoring | default .Release.Namespace }}.svc.cluster.local:8080']
 {{- end }}
 
+{{- if .Values.prometheus.externalTarget }}
+      - job_name: 'external'
+        static_configs:
+          - targets: ['{{ .Values.prometheus.externalTarget }}']
+            labels:
+              source: 'external'
+{{- end }}
+
   alerts.yml: |
     groups:
       - name: demo-app-alerts
@@ -186,9 +194,16 @@ spec:
         app: prometheus
     spec:
       serviceAccountName: prometheus
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        fsGroup: 65534
       containers:
       - name: prometheus
         image: "{{ .Values.prometheus.image.repository }}:{{ .Values.prometheus.image.tag }}"
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
         args:
           - "--config.file=/etc/prometheus/prometheus.yml"
           - "--storage.tsdb.path=/prometheus"
@@ -211,10 +226,18 @@ spec:
         volumeMounts:
         - name: config-volume
           mountPath: /etc/prometheus
+        - name: data
+          mountPath: /prometheus
+        - name: tmp
+          mountPath: /tmp
       volumes:
       - name: config-volume
         configMap:
           name: prometheus-config
+      - name: data
+        emptyDir: {}
+      - name: tmp
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

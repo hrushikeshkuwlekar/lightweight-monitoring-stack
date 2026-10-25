@@ -18,53 +18,29 @@ metadata:
 rules:
 - apiGroups: [""]
   resources:
-  - configmaps
-  - secrets
   - nodes
   - pods
   - services
-  - serviceaccounts
-  - resourcequotas
-  - replicationcontrollers
-  - limitranges
-  - persistentvolumeclaims
-  - persistentvolumes
   - namespaces
   - endpoints
+  - persistentvolumeclaims
+  - resourcequotas
   verbs: ["list", "watch"]
 - apiGroups: ["apps"]
   resources:
-  - statefulsets
-  - daemonsets
   - deployments
   - replicasets
+  - statefulsets
+  - daemonsets
   verbs: ["list", "watch"]
 - apiGroups: ["batch"]
   resources:
-  - cronjobs
   - jobs
+  - cronjobs
   verbs: ["list", "watch"]
 - apiGroups: ["autoscaling"]
   resources:
   - horizontalpodautoscalers
-  verbs: ["list", "watch"]
-- apiGroups: ["networking.k8s.io"]
-  resources:
-  - networkpolicies
-  - ingresses
-  verbs: ["list", "watch"]
-- apiGroups: ["coordination.k8s.io"]
-  resources:
-  - leases
-  verbs: ["list", "watch"]
-- apiGroups: ["policy"]
-  resources:
-  - poddisruptionbudgets
-  verbs: ["list", "watch"]
-- apiGroups: ["storage.k8s.io"]
-  resources:
-  - storageclasses
-  - volumeattachments
   verbs: ["list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -102,9 +78,18 @@ spec:
         app: kube-state-metrics
     spec:
       serviceAccountName: kube-state-metrics
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        fsGroup: 65534
       containers:
       - name: kube-state-metrics
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
         image: "{{ .Values.kubeStateMetrics.image.repository }}:{{ .Values.kubeStateMetrics.image.tag }}"
+        args:
+        - --resources={{ join "," .Values.kubeStateMetrics.collectors }}
         ports:
         - containerPort: 8080
           name: http-metrics

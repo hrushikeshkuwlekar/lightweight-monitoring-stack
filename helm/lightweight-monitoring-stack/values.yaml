@@ -44,7 +44,7 @@ demoApp:
   ## @param demoApp.port Container port for the FastAPI app
   port: 8000
   ## @param demoApp.serviceType Kubernetes service type
-  serviceType: LoadBalancer
+  serviceType: ClusterIP
   resources:
     requests:
       cpu: 20m
@@ -71,7 +71,7 @@ loadGenerator:
     tag: ""
     pullPolicy: IfNotPresent
   port: 8089
-  serviceType: LoadBalancer
+  serviceType: ClusterIP
   resources:
     requests:
       cpu: 20m
@@ -95,6 +95,19 @@ kubeStateMetrics:
   image:
     repository: registry.k8s.io/kube-state-metrics/kube-state-metrics
     tag: v2.13.0
+  ## @param kubeStateMetrics.collectors Resource types KSM watches and exposes metrics for.
+  collectors:
+    - pods
+    - nodes
+    - namespaces
+    - deployments
+    - replicasets
+    - statefulsets
+    - daemonsets
+    - services
+    - jobs
+    - horizontalpodautoscalers
+    - persistentvolumeclaims
   resources:
     requests:
       cpu: 10m
@@ -107,11 +120,14 @@ kubeStateMetrics:
 prometheus:
   ## @param prometheus.enabled Enable Prometheus deployment
   enabled: true
+  ## @param prometheus.externalTarget Optional extra scrape target (e.g. a host outside the cluster).
+  ## Example: --set prometheus.externalTarget=192.168.1.10:9100
+  externalTarget: ""
   image:
     repository: prom/prometheus
     tag: v2.55.0
   port: 9090
-  serviceType: LoadBalancer
+  serviceType: ClusterIP
   scrapeInterval: 5s
   evaluationInterval: 5s
   retention:
@@ -133,7 +149,7 @@ grafana:
     repository: grafana/grafana-oss
     tag: 11.3.0
   port: 3000
-  serviceType: LoadBalancer
+  serviceType: ClusterIP
   ## @param grafana.anonymousAuth Enable anonymous admin access (no login required)
   anonymousAuth: true
   ## @param grafana.adminUser Default admin username

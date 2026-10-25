@@ -45,7 +45,11 @@ Usage: {{ include "lightweight-monitoring-stack.svcType" (list . .Values.prometh
 {{- define "lightweight-monitoring-stack.svcType" -}}
 {{- $ctx := index . 0 -}}
 {{- $perSvc := index . 1 -}}
+{{- if eq $ctx.Values.profile "laptop" -}}
+{{- coalesce $ctx.Values.expose.type "LoadBalancer" }}
+{{- else -}}
 {{- coalesce $ctx.Values.expose.type $perSvc | default "ClusterIP" }}
+{{- end -}}
 {{- end }}
 
 {{/*
