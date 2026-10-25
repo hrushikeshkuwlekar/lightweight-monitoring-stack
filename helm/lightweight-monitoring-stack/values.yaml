@@ -65,10 +65,27 @@ loadGenerator:
     initialDelaySeconds: 2
     periodSeconds: 5
 
+## @section Kube State Metrics parameters
+kubeStateMetrics:
+  ## @param kubeStateMetrics.enabled Enable kube-state-metrics (provides kube_pod_info, kube_node_info, etc.)
+  enabled: true
+  image:
+    repository: registry.k8s.io/kube-state-metrics/kube-state-metrics
+    tag: v2.13.0
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+
 ## @section Prometheus parameters
 prometheus:
   ## @param prometheus.enabled Enable Prometheus deployment
   enabled: true
+  ## @param prometheus.scrapeKubelet Enable scraping kubelet & cAdvisor for container_* metrics
+  scrapeKubelet: true
   image:
     repository: prom/prometheus
     tag: latest

@@ -41,6 +41,39 @@ data:
         static_configs:
           - targets: ['localhost:{{ .Values.prometheus.port }}']
 
+{{- if .Values.kubeStateMetrics.enabled }}
+      - job_name: 'kube-state-metrics'
+        static_configs:
+          - targets: ['kube-state-metrics-svc.{{ .Values.namespaces.monitoring | default .Release.Namespace }}.svc.cluster.local:8080']
+{{- end }}
+
+{{- if .Values.prometheus.scrapeKubelet }}
+      - job_name: 'kubelet'
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs:
+          - role: node
+        relabel_configs:
+          - action: labelmap
+            regex: __meta_kubernetes_node_label_(.+)
+
+      - job_name: 'cadvisor'
+        scheme: https
+        metrics_path: /metrics/cadvisor
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs:
+          - role: node
+        relabel_configs:
+          - action: labelmap
+            regex: __meta_kubernetes_node_label_(.+)
+{{- end }}
+
   alerts.yml: |
     groups:
       - name: demo-app-alerts
@@ -90,6 +123,7 @@ spec:
       labels:
         app: prometheus
     spec:
+      serviceAccountName: prometheus
       containers:
       - name: prometheus
         image: "{{ .Values.prometheus.image.repository }}:{{ .Values.prometheus.image.tag }}"
