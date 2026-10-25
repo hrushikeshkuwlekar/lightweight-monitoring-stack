@@ -77,6 +77,9 @@ fi
 echo "2. demo-app /metrics"
 DEMO_APP_POD=$(kubectl get pod -n "$NS_APP" -l app=demo-app -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
 if [[ -n "$DEMO_APP_POD" ]]; then
+  # Prime the counter: http_requests_total is lazily created on first scrape of a
+  # labeled request, so hit /healthz once before reading /metrics.
+  kubectl exec -n "$NS_APP" "$DEMO_APP_POD" -- wget -qO- http://localhost:8000/healthz >/dev/null 2>&1 || true
   if kubectl exec -n "$NS_APP" "$DEMO_APP_POD" -- wget -qO- http://localhost:8000/metrics 2>/dev/null | grep -q 'http_requests_total'; then
     pass "demo-app /metrics reachable and includes http_requests_total"
   else
@@ -90,7 +93,14 @@ fi
 echo "3. load-generator /health"
 LG_POD=$(kubectl get pod -n "$NS_APP" -l app=load-generator -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
 if [[ -n "$LG_POD" ]]; then
-  if kubectl exec -n "$NS_APP" "$LG_POD" -- wget -qO- http://localhost:8089/health 2>/dev/null | grep -q '"status"'; then
+  LG_OK="no"
+  for i in 1 2 3 4 5; do
+    if kubectl exec -n "$NS_APP" "$LG_POD" -- wget -qO- http://localhost:8089/health 2>/dev/null | grep -q '"status"'; then
+      LG_OK="yes"; break
+    fi
+    sleep 2
+  done
+  if [[ "$LG_OK" == "yes" ]]; then
     pass "load-generator /health returns OK"
   else
     fail "load-generator /health did not return expected JSON"
@@ -122,7 +132,7 @@ fi
 # ── 6. Grafana health ────────────────────────────────────────────────────────
 echo "6. Grafana health"
 GRAFANA_HEALTH=$(curl -sf "http://localhost:${GRAFANA_PORT}/api/health" 2>/dev/null || echo "{}")
-if echo "$GRAFANA_HEALTH" | grep -q '"database":"ok"'; then
+if echo "$GRAFANA_HEALTH" | python3 -c "import sys,json; sys.exit(0 if json.load(sys.stdin).get('database')=='ok' else 1)" 2>/dev/null; then
   pass "Grafana /api/health → database OK"
 else
   fail "Grafana /api/health did not return database OK (got: $GRAFANA_HEALTH)"
