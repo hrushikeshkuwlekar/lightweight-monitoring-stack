@@ -3,12 +3,12 @@ entries:
   lightweight-monitoring-stack:
   - apiVersion: v2
     appVersion: 2.2.1
-    created: "2026-10-25T18:21:12.995744786Z"
+    created: "2026-10-25T18:25:43.215483148Z"
     description: Ultra-low resource monitoring stack with dedicated async load generator
       (~220 MB RAM total). Deploys a FastAPI demo app with Prometheus metrics, standalone
       TPS load generator, Prometheus, and pre-provisioned Grafana dashboards — perfect
       for laptop demos.
-    digest: 364080b8a0a3a86c84194c3f464b1ea0c02929e47629e293cf1166f5590bd16c
+    digest: b30cefd8d202402fc2767f5a7df25a7f8216e43cc32c54ea6fe780e5e832185c
     home: https://github.com/hrushikeshkuwlekar/lightweight-monitoring-stack
     icon: https://raw.githubusercontent.com/prometheus/prometheus/main/documentation/images/prometheus-logo.svg
     keywords:
@@ -30,7 +30,7 @@ entries:
     version: 2.2.1
   - apiVersion: v2
     appVersion: 2.2.0
-    created: "2026-10-25T18:21:12.994505305Z"
+    created: "2026-10-25T18:25:43.214509446Z"
     description: Ultra-low resource monitoring stack with dedicated async load generator
       (~220 MB RAM total). Deploys a FastAPI demo app with Prometheus metrics, standalone
       TPS load generator, Prometheus, and pre-provisioned Grafana dashboards — perfect
@@ -57,7 +57,7 @@ entries:
     version: 2.2.0
   - apiVersion: v2
     appVersion: 2.1.1
-    created: "2026-10-25T18:21:12.992831765Z"
+    created: "2026-10-25T18:25:43.21344294Z"
     description: Ultra-low resource monitoring stack with dedicated async load generator
       (~220 MB RAM total). Deploys a FastAPI demo app with Prometheus metrics, standalone
       TPS load generator, Prometheus, and pre-provisioned Grafana dashboards — perfect
@@ -84,7 +84,7 @@ entries:
     version: 2.1.1
   - apiVersion: v2
     appVersion: 2.1.0
-    created: "2026-10-25T18:21:12.99219838Z"
+    created: "2026-10-25T18:25:43.212679032Z"
     description: Ultra-low resource monitoring stack with dedicated async load generator
       (~220 MB RAM total). Deploys a FastAPI demo app with Prometheus metrics, standalone
       TPS load generator, Prometheus, and pre-provisioned Grafana dashboards — perfect
@@ -111,7 +111,7 @@ entries:
     version: 2.1.0
   - apiVersion: v2
     appVersion: 2.0.0
-    created: "2026-10-25T18:21:12.99159797Z"
+    created: "2026-10-25T18:25:43.211903383Z"
     description: Ultra-low resource monitoring stack with dedicated async load generator
       (~220 MB RAM total). Deploys a FastAPI demo app with Prometheus metrics, standalone
       TPS load generator, Prometheus, and pre-provisioned Grafana dashboards — perfect
@@ -138,7 +138,7 @@ entries:
     version: 2.0.0
   - apiVersion: v2
     appVersion: 1.0.0
-    created: "2026-10-25T18:21:12.991030233Z"
+    created: "2026-10-25T18:25:43.211166075Z"
     description: Ultra-low resource monitoring stack (~120 MB RAM total). Deploys
       a FastAPI demo app with Prometheus metrics, Prometheus, and pre-provisioned
       Grafana dashboards — perfect for laptop demos.
@@ -162,7 +162,7 @@ entries:
     version: 0.1.3
   - apiVersion: v2
     appVersion: 1.0.0
-    created: "2026-10-25T18:21:12.990598312Z"
+    created: "2026-10-25T18:25:43.210600692Z"
     description: Ultra-low resource monitoring stack (~120 MB RAM total). Deploys
       a FastAPI demo app with Prometheus metrics, Prometheus, and pre-provisioned
       Grafana dashboards — perfect for laptop demos.
@@ -186,7 +186,7 @@ entries:
     version: 0.1.2
   - apiVersion: v2
     appVersion: 1.0.0
-    created: "2026-10-25T18:21:12.990195199Z"
+    created: "2026-10-25T18:25:43.210034676Z"
     description: Ultra-low resource monitoring stack (~120 MB RAM total). Deploys
       a FastAPI demo app with Prometheus metrics, Prometheus, and pre-provisioned
       Grafana dashboards — perfect for laptop demos.
@@ -210,7 +210,7 @@ entries:
     version: 0.1.1
   - apiVersion: v2
     appVersion: 1.0.0
-    created: "2026-10-25T18:21:12.989744781Z"
+    created: "2026-10-25T18:25:43.20948919Z"
     description: Ultra-low resource monitoring stack (~120 MB RAM total). Deploys
       a FastAPI demo app with Prometheus metrics, Prometheus, and pre-provisioned
       Grafana dashboards — perfect for laptop demos.
@@ -232,4 +232,4 @@ entries:
     urls:
     - https://hrushikeshkuwlekar.github.io/lightweight-monitoring-stack/lightweight-monitoring-stack-0.1.0.tgz
     version: 0.1.0
-generated: "2026-10-25T18:21:12.989214895Z"
+generated: "2026-10-25T18:25:43.208609906Z"
