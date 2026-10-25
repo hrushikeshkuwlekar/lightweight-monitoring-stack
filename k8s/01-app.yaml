@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
       - name: demo-app
-        image: demo-app:v1
-        imagePullPolicy: IfNotPresent
+        image: ghcr.io/hrushikeshkuwlekar/lightweight-monitoring-stack:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 8000
           name: http

@@ -1,4 +1,4 @@
-.PHONY: up down status stats logs simulate spike stop-load compose-up compose-down port-forward
+.PHONY: up down status stats logs simulate spike stop-load compose-up compose-down port-forward dev-images smoke
 
 # Apply Kubernetes manifests (deploys app and monitoring namespaces)
 up:
@@ -46,6 +46,24 @@ compose-up:
 # Stop Docker Compose
 compose-down:
 	docker compose down
+
+# Build local Docker images and load them into the active kind/k3d cluster.
+# Use this when iterating on app code without pushing to GHCR.
+dev-images:
+	docker build -t ghcr.io/hrushikeshkuwlekar/lightweight-monitoring-stack:dev ./app
+	docker build -t ghcr.io/hrushikeshkuwlekar/lightweight-monitoring-stack-loadgen:dev ./load-generator
+	@if kubectl config current-context 2>/dev/null | grep -q kind; then \
+	  kind load docker-image ghcr.io/hrushikeshkuwlekar/lightweight-monitoring-stack:dev || true; \
+	  kind load docker-image ghcr.io/hrushikeshkuwlekar/lightweight-monitoring-stack-loadgen:dev || true; \
+	elif kubectl config current-context 2>/dev/null | grep -q k3d; then \
+	  k3d image import ghcr.io/hrushikeshkuwlekar/lightweight-monitoring-stack:dev || true; \
+	  k3d image import ghcr.io/hrushikeshkuwlekar/lightweight-monitoring-stack-loadgen:dev || true; \
+	fi
+	@echo "Images built. Install with: helm upgrade demo ./helm/lightweight-monitoring-stack --set demoApp.image.tag=dev --set loadGenerator.image.tag=dev --reuse-values"
+
+# Run the 9-point smoke test against the active cluster
+smoke:
+	@bash scripts/smoke.sh
 
 # Port forward all services across both namespaces locally
 port-forward:

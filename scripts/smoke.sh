@@ -153,7 +153,7 @@ else
   fail "No Grafana dashboards found — provisioning may have failed"
 fi
 
-# ── 9. No crash-looping pods (60 s soak) ─────────────────────────────────────
+# ── 9. No crash-looping pods (30 s soak) ─────────────────────────────────────
 echo "9. Pod stability (30 s soak)"
 sleep 30
 MAX_RESTARTS=$(kubectl get pods -n "$NS_APP" -n "$NS_MON" --no-headers 2>/dev/null \
@@ -162,6 +162,43 @@ if [[ "${MAX_RESTARTS:-0}" -le 1 ]]; then
   pass "No pod has more than 1 restart after soak"
 else
   fail "A pod has $MAX_RESTARTS restarts — possible crash loop"
+fi
+
+# ── 10. nodeMetrics mode (optional — only runs when NODE_METRICS_MODE is set) ─
+if [[ -n "${NODE_METRICS_MODE:-}" ]]; then
+  echo "10. nodeMetrics mode: $NODE_METRICS_MODE"
+  case "$NODE_METRICS_MODE" in
+    resource)
+      COUNT=$(curl -sf "http://localhost:${PROM_PORT}/api/v1/query?query=container_cpu_usage_seconds_total" 2>/dev/null \
+        | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d.get('data',{}).get('result',[])))" 2>/dev/null || echo 0)
+      if [[ "$COUNT" -ge 1 ]]; then
+        pass "resource mode: container_cpu_usage_seconds_total has $COUNT series"
+      else
+        fail "resource mode: container_cpu_usage_seconds_total has 0 series"
+      fi
+      ;;
+    apiserver|direct)
+      COUNT=$(curl -sf "http://localhost:${PROM_PORT}/api/v1/query?query=kubelet_node_name" 2>/dev/null \
+        | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d.get('data',{}).get('result',[])))" 2>/dev/null || echo 0)
+      if [[ "$COUNT" -ge 1 ]]; then
+        pass "$NODE_METRICS_MODE mode: kubelet metrics present ($COUNT series)"
+      else
+        fail "$NODE_METRICS_MODE mode: kubelet_node_name has 0 series — check RBAC or network access"
+      fi
+      ;;
+    daemonset)
+      COUNT=$(curl -sf "http://localhost:${PROM_PORT}/api/v1/query?query=container_cpu_usage_seconds_total" 2>/dev/null \
+        | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d.get('data',{}).get('result',[])))" 2>/dev/null || echo 0)
+      if [[ "$COUNT" -ge 1 ]]; then
+        pass "daemonset mode: container_cpu_usage_seconds_total has $COUNT series"
+      else
+        fail "daemonset mode: container_cpu_usage_seconds_total has 0 series — check cAdvisor DaemonSet"
+      fi
+      ;;
+    off)
+      pass "nodeMetrics.mode=off: node scraping intentionally disabled"
+      ;;
+  esac
 fi
 
 # ── Summary ───────────────────────────────────────────────────────────────────

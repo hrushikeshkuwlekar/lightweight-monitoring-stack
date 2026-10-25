@@ -56,7 +56,7 @@ metadata:
     app: load-generator
     {{- include "lightweight-monitoring-stack.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.loadGenerator.serviceType }}
+  type: {{ include "lightweight-monitoring-stack.svcType" (list . .Values.loadGenerator.serviceType) }}
   ports:
   - port: {{ .Values.loadGenerator.port }}
     targetPort: {{ .Values.loadGenerator.port }}

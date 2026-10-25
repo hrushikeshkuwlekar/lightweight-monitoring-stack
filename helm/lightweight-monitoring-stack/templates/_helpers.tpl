@@ -38,13 +38,25 @@ Demo app image tag — defaults to Chart.AppVersion
 {{- end }}
 
 {{/*
-Effective scrapeKubelet — forced false when profile=laptop
+Effective service type for a given component.
+Pass the per-component serviceType as the argument; expose.type overrides it when set.
+Usage: {{ include "lightweight-monitoring-stack.svcType" (list . .Values.prometheus.serviceType) }}
 */}}
-{{- define "lightweight-monitoring-stack.scrapeKubelet" -}}
+{{- define "lightweight-monitoring-stack.svcType" -}}
+{{- $ctx := index . 0 -}}
+{{- $perSvc := index . 1 -}}
+{{- coalesce $ctx.Values.expose.type $perSvc | default "ClusterIP" }}
+{{- end }}
+
+{{/*
+Effective nodeMetrics mode.
+profile=laptop forces resource mode (light: CPU+memory only, ~50 series).
+*/}}
+{{- define "lightweight-monitoring-stack.nodeMetricsMode" -}}
 {{- if eq .Values.profile "laptop" -}}
-false
+resource
 {{- else -}}
-{{- .Values.prometheus.scrapeKubelet }}
+{{- .Values.nodeMetrics.mode | default "off" }}
 {{- end -}}
 {{- end }}
 

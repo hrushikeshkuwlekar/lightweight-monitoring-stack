@@ -9,6 +9,7 @@ data:
     datasources:
       - name: Prometheus
         type: prometheus
+        uid: prometheus
         access: proxy
         url: http://prometheus-svc:9090
         isDefault: true
@@ -744,7 +745,7 @@ spec:
     spec:
       containers:
       - name: grafana
-        image: grafana/grafana-oss:latest
+        image: grafana/grafana-oss:11.3.0
         ports:
         - containerPort: 3000
           name: http

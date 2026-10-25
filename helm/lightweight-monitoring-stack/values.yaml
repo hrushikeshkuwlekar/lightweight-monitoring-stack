@@ -1,3 +1,21 @@
+## @param expose.type Override the Kubernetes Service type for every component at once.
+## Valid values: LoadBalancer, NodePort, ClusterIP, "".
+## When empty (default) each component uses its own serviceType value.
+## Example: --set expose.type=ClusterIP disables all LoadBalancer services.
+expose:
+  type: ""
+
+## @section Node metrics configuration
+## @param nodeMetrics.mode How to scrape Kubernetes node / container metrics.
+## Options:
+##   off        — no node scraping (default; safe for resource-constrained clusters)
+##   apiserver  — scrape kubelet via the API server node proxy (requires RBAC; ~35k series on k3s)
+##   direct     — scrape kubelet directly (port 10250; requires network access)
+##   resource   — scrape /metrics/resource only (CPU + memory; ~50 series; best for laptops)
+##   daemonset  — deploy a cAdvisor DaemonSet (full container_* metrics on any node)
+nodeMetrics:
+  mode: "off"
+
 ## @param profile Set to 'laptop' to preserve demo-safe defaults regardless of other overrides.
 ## The laptop profile forces: scrapeKubelet=false, prometheus memory limit=256Mi,
 ## grafana anonymousAuth=true, and expose via LoadBalancer.
@@ -89,13 +107,9 @@ kubeStateMetrics:
 prometheus:
   ## @param prometheus.enabled Enable Prometheus deployment
   enabled: true
-  ## @param prometheus.scrapeKubelet Enable scraping kubelet & cAdvisor for container_* metrics
-  ## Disabled by default: the kubelet job generates ~35k series and OOM-kills Prometheus on
-  ## resource-constrained clusters (k3s/OrbStack). Enable only when nodeMetrics.mode=direct.
-  scrapeKubelet: false
   image:
     repository: prom/prometheus
-    tag: latest
+    tag: v2.55.0
   port: 9090
   serviceType: LoadBalancer
   scrapeInterval: 5s
@@ -117,7 +131,7 @@ grafana:
   enabled: true
   image:
     repository: grafana/grafana-oss
-    tag: latest
+    tag: 11.3.0
   port: 3000
   serviceType: LoadBalancer
   ## @param grafana.anonymousAuth Enable anonymous admin access (no login required)

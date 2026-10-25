@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
       - name: load-generator
-        image: load-generator:v1
-        imagePullPolicy: IfNotPresent
+        image: ghcr.io/hrushikeshkuwlekar/lightweight-monitoring-stack-loadgen:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 8089
           name: http

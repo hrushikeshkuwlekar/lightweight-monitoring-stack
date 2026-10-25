@@ -47,7 +47,48 @@ data:
           - targets: ['kube-state-metrics-svc.{{ .Values.namespaces.monitoring | default .Release.Namespace }}.svc.cluster.local:8080']
 {{- end }}
 
-{{- if eq (include "lightweight-monitoring-stack.scrapeKubelet" .) "true" }}
+{{- $mode := include "lightweight-monitoring-stack.nodeMetricsMode" . }}
+
+{{- if eq $mode "apiserver" }}
+      - job_name: 'kubelet'
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs:
+          - role: node
+        relabel_configs:
+          - action: labelmap
+            regex: __meta_kubernetes_node_label_(.+)
+          - target_label: __address__
+            replacement: kubernetes.default.svc:443
+          - source_labels: [__meta_kubernetes_node_name]
+            regex: (.+)
+            target_label: __metrics_path__
+            replacement: /api/v1/nodes/${1}/proxy/metrics
+
+      - job_name: 'cadvisor'
+        scheme: https
+        metrics_path: /metrics/cadvisor
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs:
+          - role: node
+        relabel_configs:
+          - action: labelmap
+            regex: __meta_kubernetes_node_label_(.+)
+          - target_label: __address__
+            replacement: kubernetes.default.svc:443
+          - source_labels: [__meta_kubernetes_node_name]
+            regex: (.+)
+            target_label: __metrics_path__
+            replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
+{{- end }}
+
+{{- if eq $mode "direct" }}
       - job_name: 'kubelet'
         scheme: https
         tls_config:
@@ -72,6 +113,27 @@ data:
         relabel_configs:
           - action: labelmap
             regex: __meta_kubernetes_node_label_(.+)
+{{- end }}
+
+{{- if eq $mode "resource" }}
+      - job_name: 'kubelet-resource'
+        scheme: https
+        metrics_path: /metrics/resource
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs:
+          - role: node
+        relabel_configs:
+          - action: labelmap
+            regex: __meta_kubernetes_node_label_(.+)
+{{- end }}
+
+{{- if eq $mode "daemonset" }}
+      - job_name: 'cadvisor-daemonset'
+        static_configs:
+          - targets: ['cadvisor-svc.{{ .Values.namespaces.monitoring | default .Release.Namespace }}.svc.cluster.local:8080']
 {{- end }}
 
   alerts.yml: |
@@ -163,7 +225,7 @@ metadata:
     app: prometheus
     {{- include "lightweight-monitoring-stack.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.prometheus.serviceType }}
+  type: {{ include "lightweight-monitoring-stack.svcType" (list . .Values.prometheus.serviceType) }}
   ports:
   - port: {{ .Values.prometheus.port }}
     targetPort: {{ .Values.prometheus.port }}

@@ -52,7 +52,7 @@ metadata:
     app: demo-app
     {{- include "lightweight-monitoring-stack.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.demoApp.serviceType }}
+  type: {{ include "lightweight-monitoring-stack.svcType" (list . .Values.demoApp.serviceType) }}
   ports:
   - port: {{ .Values.demoApp.port }}
     targetPort: {{ .Values.demoApp.port }}
