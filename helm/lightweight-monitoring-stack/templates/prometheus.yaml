@@ -150,8 +150,19 @@ data:
             regex: cadvisor
           - source_labels: [__meta_kubernetes_pod_node_name]
             target_label: node
-          - source_labels: [__meta_kubernetes_pod_name]
+          # The three k8s labels come through cAdvisor as
+          # container_label_io_kubernetes_*. Rename them to pod/namespace/
+          # container so the Grafana dashboards (which assume kubelet-style
+          # labels) can match series.
+        metric_relabel_configs:
+          - source_labels: [container_label_io_kubernetes_pod_name]
             target_label: pod
+          - source_labels: [container_label_io_kubernetes_pod_namespace]
+            target_label: namespace
+          - source_labels: [container_label_io_kubernetes_container_name]
+            target_label: container
+          - regex: container_label_io_kubernetes_(pod_name|pod_namespace|container_name)
+            action: labeldrop
 {{- end }}
 
 {{- if .Values.prometheus.externalTarget }}
