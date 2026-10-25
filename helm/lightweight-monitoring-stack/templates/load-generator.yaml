@@ -19,6 +19,8 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
         {{- if not .Values.openshift }}
         runAsUser: 10001
         fsGroup: 10001
@@ -29,6 +31,8 @@ spec:
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
         imagePullPolicy: {{ .Values.loadGenerator.image.pullPolicy }}
         ports:
         - containerPort: {{ .Values.loadGenerator.port }}

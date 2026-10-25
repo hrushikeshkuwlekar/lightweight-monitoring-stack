@@ -1,4 +1,4 @@
-🚀 Lightweight Monitoring Stack v2 has been deployed!
+🚀 Lightweight Monitoring Stack {{ .Chart.Version }} has been deployed!
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   Workload Architecture: 2 Namespaces

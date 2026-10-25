@@ -214,6 +214,8 @@ spec:
       serviceAccountName: prometheus
       securityContext:
         runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
         {{- if not .Values.openshift }}
         runAsUser: 65534
         fsGroup: 65534
@@ -224,6 +226,8 @@ spec:
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
         args:
           - "--config.file=/etc/prometheus/prometheus.yml"
           - "--storage.tsdb.path=/prometheus"

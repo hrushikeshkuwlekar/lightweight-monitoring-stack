@@ -80,6 +80,8 @@ spec:
       serviceAccountName: kube-state-metrics
       securityContext:
         runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
         {{- if not .Values.openshift }}
         runAsUser: 65534
         fsGroup: 65534
@@ -89,6 +91,8 @@ spec:
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
         image: "{{ .Values.kubeStateMetrics.image.repository }}:{{ .Values.kubeStateMetrics.image.tag }}"
         args:
         - --resources={{ join "," .Values.kubeStateMetrics.collectors }}

@@ -112,6 +112,8 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
         {{- if not .Values.openshift }}
         runAsUser: 472
         fsGroup: 472
@@ -122,6 +124,8 @@ spec:
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
         ports:
         - containerPort: {{ .Values.grafana.port }}
           name: http
