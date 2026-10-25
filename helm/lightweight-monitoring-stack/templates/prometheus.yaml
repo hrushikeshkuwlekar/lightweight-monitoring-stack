@@ -47,7 +47,7 @@ data:
           - targets: ['kube-state-metrics-svc.{{ .Values.namespaces.monitoring | default .Release.Namespace }}.svc.cluster.local:8080']
 {{- end }}
 
-{{- if .Values.prometheus.scrapeKubelet }}
+{{- if eq (include "lightweight-monitoring-stack.scrapeKubelet" .) "true" }}
       - job_name: 'kubelet'
         scheme: https
         tls_config:
@@ -145,7 +145,7 @@ spec:
             memory: {{ .Values.prometheus.resources.requests.memory }}
           limits:
             cpu: {{ .Values.prometheus.resources.limits.cpu }}
-            memory: {{ .Values.prometheus.resources.limits.memory }}
+            memory: {{ include "lightweight-monitoring-stack.prometheusMemLimit" . }}
         volumeMounts:
         - name: config-volume
           mountPath: /etc/prometheus

@@ -36,3 +36,36 @@ Demo app image tag — defaults to Chart.AppVersion
 {{- define "lightweight-monitoring-stack.appImageTag" -}}
 {{- .Values.demoApp.image.tag | default .Chart.AppVersion }}
 {{- end }}
+
+{{/*
+Effective scrapeKubelet — forced false when profile=laptop
+*/}}
+{{- define "lightweight-monitoring-stack.scrapeKubelet" -}}
+{{- if eq .Values.profile "laptop" -}}
+false
+{{- else -}}
+{{- .Values.prometheus.scrapeKubelet }}
+{{- end -}}
+{{- end }}
+
+{{/*
+Effective Prometheus memory limit — capped at 256Mi when profile=laptop
+*/}}
+{{- define "lightweight-monitoring-stack.prometheusMemLimit" -}}
+{{- if eq .Values.profile "laptop" -}}
+256Mi
+{{- else -}}
+{{- .Values.prometheus.resources.limits.memory }}
+{{- end -}}
+{{- end }}
+
+{{/*
+Effective Grafana anonymousAuth — forced true when profile=laptop
+*/}}
+{{- define "lightweight-monitoring-stack.grafanaAnonymousAuth" -}}
+{{- if eq .Values.profile "laptop" -}}
+true
+{{- else -}}
+{{- .Values.grafana.anonymousAuth }}
+{{- end -}}
+{{- end }}

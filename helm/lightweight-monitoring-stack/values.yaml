@@ -1,3 +1,8 @@
+## @param profile Set to 'laptop' to preserve demo-safe defaults regardless of other overrides.
+## The laptop profile forces: scrapeKubelet=false, prometheus memory limit=256Mi,
+## grafana anonymousAuth=true, and expose via LoadBalancer.
+profile: ""
+
 ## @section Namespaces configuration
 namespaces:
   ## @param namespaces.create Create namespaces automatically
@@ -85,7 +90,9 @@ prometheus:
   ## @param prometheus.enabled Enable Prometheus deployment
   enabled: true
   ## @param prometheus.scrapeKubelet Enable scraping kubelet & cAdvisor for container_* metrics
-  scrapeKubelet: true
+  ## Disabled by default: the kubelet job generates ~35k series and OOM-kills Prometheus on
+  ## resource-constrained clusters (k3s/OrbStack). Enable only when nodeMetrics.mode=direct.
+  scrapeKubelet: false
   image:
     repository: prom/prometheus
     tag: latest
@@ -102,7 +109,7 @@ prometheus:
       memory: 60Mi
     limits:
       cpu: 200m
-      memory: 120Mi
+      memory: 256Mi
 
 ## @section Grafana parameters
 grafana:
