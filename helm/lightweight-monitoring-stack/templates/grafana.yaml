@@ -51,15 +51,25 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: grafana-dashboards
+  name: grafana-dashboards-app
   namespace: {{ .Values.namespaces.monitoring | default .Release.Namespace }}
   labels:
     app: grafana
     {{- include "lightweight-monitoring-stack.labels" . | nindent 4 }}
 binaryData:
-  app/demo-app-dashboard.json: {{ .Files.Get "files/dashboards/demo-app-dashboard.json" | b64enc }}
-  app/loadgen-dashboard.json: {{ .Files.Get "files/dashboards/loadgen-dashboard.json" | b64enc }}
-  kubernetes/k8s-pods-dashboard.json: {{ .Files.Get "files/dashboards/k8s-pods-dashboard.json" | b64enc }}
+  demo-app-dashboard.json: {{ .Files.Get "files/dashboards/demo-app-dashboard.json" | b64enc }}
+  loadgen-dashboard.json: {{ .Files.Get "files/dashboards/loadgen-dashboard.json" | b64enc }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards-kubernetes
+  namespace: {{ .Values.namespaces.monitoring | default .Release.Namespace }}
+  labels:
+    app: grafana
+    {{- include "lightweight-monitoring-stack.labels" . | nindent 4 }}
+binaryData:
+  k8s-pods-dashboard.json: {{ .Files.Get "files/dashboards/k8s-pods-dashboard.json" | b64enc }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -124,8 +134,10 @@ spec:
           mountPath: /etc/grafana/provisioning/datasources
         - name: provider-volume
           mountPath: /etc/grafana/provisioning/dashboards
-        - name: dashboards-volume
-          mountPath: /var/lib/grafana/dashboards
+        - name: dashboards-app
+          mountPath: /var/lib/grafana/dashboards/app
+        - name: dashboards-kubernetes
+          mountPath: /var/lib/grafana/dashboards/kubernetes
       volumes:
       - name: datasources-volume
         configMap:
@@ -133,9 +145,12 @@ spec:
       - name: provider-volume
         configMap:
           name: grafana-dashboard-provider
-      - name: dashboards-volume
+      - name: dashboards-app
         configMap:
-          name: grafana-dashboards
+          name: grafana-dashboards-app
+      - name: dashboards-kubernetes
+        configMap:
+          name: grafana-dashboards-kubernetes
 ---
 apiVersion: v1
 kind: Service
