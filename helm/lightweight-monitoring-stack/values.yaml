@@ -1,3 +1,12 @@
+## @section Namespaces configuration
+namespaces:
+  ## @param namespaces.create Create namespaces automatically
+  create: true
+  ## @param namespaces.app Namespace for application workloads (demo-app, load-generator)
+  app: "app"
+  ## @param namespaces.monitoring Namespace for monitoring stack (prometheus, grafana)
+  monitoring: "monitoring"
+
 ## @section Demo App parameters
 demoApp:
   ## @param demoApp.replicaCount Number of demo-app replicas

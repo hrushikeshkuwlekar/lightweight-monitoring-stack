@@ -16,18 +16,20 @@ data:
       - job_name: 'demo-app'
         metrics_path: '/metrics'
         static_configs:
-          - targets: ['demo-app-svc:8000']
+          - targets: ['demo-app-svc.app.svc.cluster.local:8000']
             labels:
               app: 'demo-app'
               environment: 'local-laptop'
+              namespace: 'app'
 
       - job_name: 'load-generator'
         metrics_path: '/metrics'
         static_configs:
-          - targets: ['load-generator-svc:8089']
+          - targets: ['load-generator-svc.app.svc.cluster.local:8089']
             labels:
               app: 'load-generator'
               environment: 'local-laptop'
+              namespace: 'app'
 
       - job_name: 'prometheus'
         static_configs:

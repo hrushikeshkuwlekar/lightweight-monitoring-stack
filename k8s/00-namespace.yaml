@@ -4,3 +4,12 @@ metadata:
   name: monitoring
   labels:
     name: monitoring
+    tier: observability
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: app
+  labels:
+    name: app
+    tier: application

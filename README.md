@@ -1,133 +1,151 @@
-# Ultra-Low Resource Monitoring Stack 🚀
+# Ultra-Low Resource Monitoring Stack 🚀 (v2.0)
 
 A complete, production-grade monitoring and load testing stack designed specifically for **local laptop development** with an ultra-lean memory footprint (~220 MB total RAM across all 4 services).
 
-Now featuring a **dedicated asynchronous Load Generator module** with live TPS (Transactions Per Second) measurement, concurrency control, 7 pre-built traffic scenarios, and pre-provisioned Grafana dashboards.
+Version 2.0 introduces an enterprise-grade **2-namespace architecture (`app` + `monitoring`)**, a **dedicated asynchronous Load Generator module** with live TPS (Transactions Per Second) telemetry, concurrency control, 7 pre-built traffic scenarios, and pre-provisioned Grafana dashboards.
+
+---
+
+## 🌟 What's New in Version 2.0 (v1 vs v2 Complete Breakdown)
+
+| Feature / Capability | Version 1.0 (Legacy) | **Version 2.0 (Current)** |
+| :--- | :--- | :--- |
+| **Kubernetes Workload Isolation** | Single flat namespace (`monitoring`) | **2 Namespaces**: `app` (application & loadgen) + `monitoring` (Prometheus & Grafana) |
+| **Load Generation Architecture** | Embedded `threading.Thread` loop inside the demo app | **Dedicated standalone container** (:8089) built with `asyncio` & `aiohttp` |
+| **Metric Isolation** | Generator competed with app; metrics were polluted | **Completely isolated**; client-side and server-side metrics are distinct |
+| **Throughput & TPS Control** | None (hardcoded sleep intervals) | **Target RPS slider (1–250)** with token-bucket rate limiter |
+| **Concurrency Control** | None (single thread) | **Virtual Users slider (1–50 VU)** governed via `asyncio.Semaphore` |
+| **Live Hot-Updating** | None (restart required) | **Hot-update RPS & concurrency on the fly** without stopping (`POST /api/load/update`) |
+| **Pre-Built Traffic Scenarios** | 0 (only a single start/stop toggle) | **7 Pre-Built Scenarios**: Steady State, Ramp-Up, Spike Burst, Error Storm, Latency Soak, Chaos, Canary |
+| **Grafana Dashboards** | 1 Dashboard (*App Performance*) | **2 Pre-Provisioned Dashboards**: *Load Generator & TPS Analytics* + enhanced *App Performance & Health* |
+| **TPS Telemetry in Grafana** | ❌ None | **✅ Full TPS Tracking**: Achieved TPS vs Target RPS overlay, Delivery Efficiency % gauge |
+| **Client-Side Latency Metrics** | ❌ None | **✅ Client Percentiles**: p50, p90, p95, p99 histograms and latency heatmap |
+| **Failure Classification** | Generic counter | **Categorized Errors**: timeouts, connection refused, 4xx, 5xx |
+| **Server-Side Saturation** | ❌ None | **In-flight requests gauge**, payload sizes, uptime, USD revenue tracking |
+| **Total Memory Footprint** | ~120 MB RAM | **~220 MB RAM** across 4 containers (still 98% less than OTel Demo's 16,000 MB!) |
+
+---
+
+## 🏛️ Multi-Namespace Enterprise Architecture
+
+```mermaid
+graph TB
+  subgraph "Namespace: app (Application Tier)"
+    APP["FastAPI Demo App<br/>svc: demo-app-svc:8000<br/>RAM: ~38 MB"]
+    LOADGEN["Standalone Load Generator<br/>svc: load-generator-svc:8089<br/>RAM: ~45 MB"]
+    LOADGEN -->|"HTTP Traffic (1-250 RPS)"| APP
+  end
+
+  subgraph "Namespace: monitoring (Observability Tier)"
+    PROM["Prometheus TSDB<br/>svc: prometheus-svc:9090<br/>RAM: ~30 MB"]
+    GRAFANA["Grafana OSS<br/>svc: grafana-svc:3000<br/>RAM: ~56 MB"]
+    PROM -->|"Cross-Namespace Scrape<br/>demo-app-svc.app.svc.cluster.local:8000"| APP
+    PROM -->|"Cross-Namespace Scrape<br/>load-generator-svc.app.svc.cluster.local:8089"| LOADGEN
+    GRAFANA -->|"PromQL Queries"| PROM
+  end
+
+  style APP fill:#2563eb,color:#fff
+  style LOADGEN fill:#7c3aed,color:#fff
+  style PROM fill:#ea580c,color:#fff
+  style GRAFANA fill:#059669,color:#fff
+```
+
+> [!TIP]
+> **Why 2 Namespaces?** Separating `app` from `monitoring` reflects enterprise production standards. In the future, you can deploy microservices, databases, or service meshes into the `app` namespace without cluttering or altering the observability infrastructure.
 
 ---
 
 ## 📊 Resource Consumption Comparison
 
-| Component | OpenTelemetry Astronomy Demo | **This Lightweight Stack** |
+| Component | OpenTelemetry Astronomy Demo | **Lightweight Stack v2.0** |
 | :--- | :--- | :--- |
-| **Number of Pods** | 34 pods (Java, Kafka, OpenSearch, etc.) | **4 pods** (App + LoadGen + Prometheus + Grafana) |
+| **Number of Pods** | 34 pods (Java, Kafka, OpenSearch, etc.) | **4 pods** across 2 namespaces |
 | **Total Memory (RAM)** | ~12,000 MB - 16,000 MB | **~220 MB total** (98% reduction!) |
 | **CPU Consumption** | 4 - 8 CPU Cores | **< 0.08 CPU Cores** |
 | **Local Laptop Heat / Battery** | Extreme fan noise & battery drain | Silent, zero laptop battery impact |
 
 ### Live Measured Container Stats:
 - **Grafana OSS**: ~56 MB RAM (0.06% CPU)
-- **Load Generator (async)**: ~45 MB RAM (0.35% CPU under 50 RPS load)
+- **Standalone Load Generator**: ~45 MB RAM (0.35% CPU at 50 RPS)
 - **FastAPI Demo App**: ~38 MB RAM (0.28% CPU)
 - **Prometheus**: ~30 MB RAM (0.96% CPU)
 
 ---
 
-## ⚡ One-Line Deploy (Helm)
+## ⚡ One-Line Deploy (Helm v2.0)
 
-Anyone with a Kubernetes cluster can deploy the entire stack in one command:
+Deploy the full dual-namespace stack in one command:
 
 ```bash
 # Add the Helm repo
 helm repo add lightweight-monitoring https://hrushikeshkuwlekar.github.io/lightweight-monitoring-stack/
 helm repo update
 
-# Install the full stack (including Load Generator)
-helm install demo lightweight-monitoring/lightweight-monitoring-stack -n monitoring --create-namespace
+# Install the full stack (automatically creates 'app' and 'monitoring' namespaces)
+helm install demo lightweight-monitoring/lightweight-monitoring-stack
 ```
 
 Then port-forward to access the services:
 ```bash
-kubectl port-forward svc/demo-app-svc       -n monitoring 8000:8000 &
-kubectl port-forward svc/load-generator-svc  -n monitoring 8089:8089 &
+make port-forward
+```
+
+Or port-forward manually:
+```bash
+kubectl port-forward svc/demo-app-svc       -n app 8000:8000 &
+kubectl port-forward svc/load-generator-svc  -n app 8089:8089 &
 kubectl port-forward svc/grafana-svc         -n monitoring 3000:3000 &
 kubectl port-forward svc/prometheus-svc      -n monitoring 9090:9090 &
 ```
 
-Or run `make port-forward`!
+### Inspect Pods across Namespaces:
+```bash
+kubectl get pods -n app
+kubectl get pods -n monitoring
+```
 
 ### Customize with values:
 ```bash
 helm install demo lightweight-monitoring/lightweight-monitoring-stack \
-  --set demoApp.replicaCount=2 \
-  --set loadGenerator.enabled=true \
-  --set grafana.enabled=true \
-  -n monitoring --create-namespace
-```
-
-### Uninstall:
-```bash
-helm uninstall demo -n monitoring
-kubectl delete namespace monitoring
-```
-
----
-
-## 🐳 Docker Images
-
-Pre-built multi-arch images (amd64 + arm64) are available on GitHub Container Registry:
-
-```bash
-# FastAPI Demo App
-docker pull ghcr.io/hrushikeshkuwlekar/lightweight-monitoring-stack:latest
-
-# Dedicated Load Generator
-docker pull ghcr.io/hrushikeshkuwlekar/lightweight-monitoring-stack-loadgen:latest
+  --set namespaces.app="my-custom-app" \
+  --set namespaces.monitoring="my-custom-monitoring" \
+  --set demoApp.replicaCount=2
 ```
 
 ---
 
 ## 🌐 Quick Access URLs
 
-| Service | Local URL | Description |
-| :--- | :--- | :--- |
-| **Load Generator UI** | [http://localhost:8089](http://localhost:8089) | 🎛️ Dedicated UI for target RPS, concurrency, sliders, 7 test scenarios, live TPS sparkline |
-| **Grafana: Load & TPS** | [http://localhost:3000/d/loadgen-analytics](http://localhost:3000/d/loadgen-analytics) | 📊 Dedicated TPS dashboard (Achieved vs Target RPS, Delivery %, Client p95/p99, Error types) |
-| **Grafana: App Health** | [http://localhost:3000](http://localhost:3000) | 📈 Server Golden RED metrics (RPS, Error Rate %, In-Flight saturation, P95/P99 latency, USD Revenue) |
-| **Interactive Demo App** | [http://localhost:8000](http://localhost:8000) | ⚡ Demo App UI to trigger ad-hoc requests, view stack links, and test endpoints |
-| **Prometheus UI** | [http://localhost:9090](http://localhost:9090) | 🔥 Scrape targets, PromQL query explorer, and alert rules |
-| **Client Metrics** | [http://localhost:8089/metrics](http://localhost:8089/metrics) | Prometheus scrape endpoint for load generator |
-| **App Metrics** | [http://localhost:8000/metrics](http://localhost:8000/metrics) | Prometheus scrape endpoint for demo app |
+| Service | Local URL | Namespace | Description |
+| :--- | :--- | :--- | :--- |
+| **Load Generator UI** | [http://localhost:8089](http://localhost:8089) | `app` | 🎛️ Target RPS (1–250), Concurrency (1–50 VU), 7 test scenarios, live TPS sparkline |
+| **Grafana: Load & TPS** | [http://localhost:3000/d/loadgen-analytics](http://localhost:3000/d/loadgen-analytics) | `monitoring` | 📊 Real-time TPS tracking, Target vs Achieved RPS, Delivery %, Client p50–p99 latency |
+| **Grafana: App Health** | [http://localhost:3000](http://localhost:3000) | `monitoring` | 📈 Server Golden RED metrics, in-flight saturation, error spikes, USD order revenue |
+| **Interactive Demo App** | [http://localhost:8000](http://localhost:8000) | `app` | ⚡ Demo App landing page to trigger manual requests and inspect endpoints |
+| **Prometheus UI** | [http://localhost:9090](http://localhost:9090) | `monitoring` | 🔥 Scrape targets across namespaces, PromQL explorer, and alert rules |
+| **Loadgen Metrics** | [http://localhost:8089/metrics](http://localhost:8089/metrics) | `app` | Prometheus scrape endpoint for load generator |
+| **App Metrics** | [http://localhost:8000/metrics](http://localhost:8000/metrics) | `app` | Prometheus scrape endpoint for demo app |
 
 ---
 
-## 🛠️ How It Works
+## 🎛️ Load Generator Features & Pre-Built Scenarios
 
-### 1. Dedicated Load Generator (`load-generator/`)
-Built with `asyncio` and `aiohttp` for maximum concurrency with negligible memory footprint (~45 MB RAM):
-- **Dynamic Rate Limiting**: Inter-arrival scheduling to hit target RPS precisely.
-- **Worker Concurrency Limit**: Simulated Virtual Users (VU) governed via `asyncio.Semaphore`.
-- **Hot-Updating**: Change target RPS or concurrency mid-test without stopping (`POST /api/load/update`).
-- **7 Pre-Built Scenarios**:
-  - `steady-state`: Stable 10 RPS, 5 VU, balanced traffic mix.
-  - `ramp-up`: Linear 0→50 RPS climb over 2m, hold 3m, ramp down.
-  - `spike-test`: Immediate 100 RPS burst to test auto-scaling / alert triggers.
-  - `error-storm`: 90% 500-errors at 20 RPS to trip Prometheus alerts.
-  - `latency-soak`: High-latency queries to test client p95/p99 degradation.
-  - `chaos`: Randomized RPS, endpoint mix, and traffic pauses.
-  - `canary-compare`: 50/50 split between fast orders and slow queries.
-- **Exported Client Metrics**:
-  - `loadgen_requests_total{method, endpoint, status_code, scenario}`
-  - `loadgen_request_duration_seconds` (histogram with p50, p90, p95, p99)
-  - `loadgen_achieved_rps` (live sliding-window TPS)
-  - `loadgen_target_rps` (configured target)
-  - `loadgen_concurrent_users` (active workers)
-  - `loadgen_requests_in_flight` (pending responses)
-  - `loadgen_errors_total{error_type}` (timeout, connection_refused, 4xx, 5xx)
-  - `loadgen_bytes_sent_total`, `loadgen_bytes_received_total`
+The standalone load generator includes **7 pre-configured production scenarios**:
 
-### 2. Demo Application (`app/main.py`)
-FastAPI application emitting server-side golden signals:
-- `http_requests_total{method, endpoint, status_code}`
-- `http_request_duration_seconds` (p50, p95, p99 percentiles)
-- `http_requests_in_flight` (saturation gauge)
-- `app_business_orders_total{tier}` & `app_orders_value_usd_total{tier}`
-- `app_uptime_seconds` & `app_simulated_memory_mb`
+1. **`steady-state`** (10 RPS, 5 VU): Baseline production traffic. Indefinite run.
+2. **`ramp-up`** (0→50 RPS, 30 VU): 2-minute linear climb, 3-minute hold, 1-minute ramp-down.
+3. **`spike-test`** (100 RPS burst, 50 VU): Sudden traffic spike to evaluate auto-scaling and alert responsiveness.
+4. **`error-storm`** (20 RPS, 90% errors): High rate of 500-errors to trip the `HighErrorRate` alert in Prometheus.
+5. **`latency-soak`** (15 RPS, 70% slow queries): Sustained slow responses to trip `p95 LatencySpike` alert.
+6. **`chaos`** (60 RPS, random mix): Unpredictable jitter, dynamic delays, and error bursts.
+7. **`canary-compare`** (20 RPS, 50/50 split): Even split between fast order processing and latency queries.
 
-### 3. Pre-Provisioned Grafana Dashboards
-Zero-setup experience: Automatically connects to Prometheus and loads two dashboards:
-1. **"App Performance & Health"** (`/var/lib/grafana/dashboards/demo-app-dashboard.json`)
-2. **"Load Generator & TPS Analytics"** (`/var/lib/grafana/dashboards/loadgen-dashboard.json`)
+### CLI One-Liners:
+```bash
+make simulate    # Run steady-state scenario
+make spike       # Fire 100 RPS traffic spike
+make stop-load   # Stop active load test
+```
 
 ---
 
@@ -146,76 +164,59 @@ Zero-setup experience: Automatically connects to Prometheus and loads two dashbo
 │   └── requirements.txt          # aiohttp, fastapi, prometheus-client
 ├── grafana/                      # Grafana provisioning & dashboards
 │   ├── dashboards/
-│   │   ├── demo-app-dashboard.json
-│   │   └── loadgen-dashboard.json
+│   │   ├── demo-app-dashboard.json   # Enhanced App Performance dashboard
+│   │   └── loadgen-dashboard.json    # Dedicated TPS Analytics dashboard
 │   └── provisioning/
 │       ├── dashboards/provider.yaml
 │       └── datasources/prometheus.yaml
 ├── prometheus/                   # Prometheus configuration
 │   ├── alerts.yml                # Alerting rules (errors, latency, load)
-│   └── prometheus.yml            # Scrape targets (demo-app, load-generator)
-├── helm/                         # ⭐ Helm chart (publishable)
+│   └── prometheus.yml            # Multi-namespace scrape targets
+├── helm/                         # ⭐ Helm chart v2.0.0
 │   └── lightweight-monitoring-stack/
-│       ├── Chart.yaml            # Chart metadata (v0.2.0)
-│       ├── values.yaml           # Configuration values
-│       └── templates/            # Kubernetes manifest templates
-├── k8s/                          # Raw Kubernetes manifests
-│   ├── 00-namespace.yaml
-│   ├── 01-app.yaml
-│   ├── 02-prometheus.yaml
-│   ├── 03-grafana.yaml
-│   └── 04-load-generator.yaml    # Load generator deployment & service
+│       ├── Chart.yaml            # Chart metadata (v2.0.0)
+│       ├── values.yaml           # Multi-namespace configuration
+│       └── templates/
+│           ├── namespaces.yaml   # Creates 'app' and 'monitoring' namespaces
+│           ├── demo-app.yaml     # Deployed to 'app' namespace
+│           ├── load-generator.yaml # Deployed to 'app' namespace
+│           ├── prometheus.yaml   # Deployed to 'monitoring' namespace
+│           └── grafana.yaml      # Deployed to 'monitoring' namespace
+├── k8s/                          # Raw Kubernetes manifests (2 namespaces)
+│   ├── 00-namespace.yaml         # Creates 'app' and 'monitoring'
+│   ├── 01-app.yaml               # Demo App in 'app'
+│   ├── 02-prometheus.yaml        # Prometheus in 'monitoring' (cross-scrapes 'app')
+│   ├── 03-grafana.yaml           # Grafana in 'monitoring' (dual dashboards)
+│   └── 04-load-generator.yaml    # Load Generator in 'app'
 ├── .github/workflows/
-│   └── release.yml               # CI/CD: Multi-arch Docker & Helm release
+│   └── release.yml               # CI/CD: Builds multi-arch images & publishes Helm v2
 ├── docker-compose.yml            # Docker Compose 4-container stack
-└── Makefile                      # Convenience targets
+└── Makefile                      # Multi-namespace convenience targets
 ```
 
 ---
 
 ## ⚡ Deployment Methods
 
-### 1. Docker Compose (Quickest Local Run)
+### 1. Raw Kubernetes Manifests (Dual Namespace)
 ```bash
-docker compose up -d --build
-docker compose down
+make up            # Applies k8s/ creating 'app' and 'monitoring' namespaces
+make status        # Inspect pods in both namespaces
+make port-forward  # Port forward all 4 services
+make down          # Clean tear-down
 ```
 
-### 2. Raw Kubernetes Manifests
+### 2. Helm Chart (Publishable v2.0.0)
 ```bash
-kubectl apply -f k8s/
+helm install demo helm/lightweight-monitoring-stack
 make port-forward
 ```
 
-### 3. Helm Chart
+### 3. Docker Compose (Quickest Local Run)
 ```bash
-helm install demo helm/lightweight-monitoring-stack -n monitoring --create-namespace
-make port-forward
+make compose-up    # Runs 4-container stack locally
+make compose-down
 ```
-
-### 4. Make Targets
-```bash
-make up            # Apply Kubernetes manifests
-make down          # Tear down the stack
-make status        # Check pod/service status
-make stats         # Show live memory & CPU across containers
-make simulate      # Trigger steady-state load test (10 RPS)
-make spike         # Trigger 100 RPS traffic spike
-make stop-load     # Stop active load test
-make compose-up    # Run full 4-container stack via Docker Compose
-make compose-down  # Stop Docker Compose
-make port-forward  # Port-forward all 4 services to localhost
-```
-
----
-
-## 🔄 CI/CD Pipeline
-
-On every push to `main` or tag creation (`v*`), GitHub Actions automatically:
-1. **Builds and pushes** multi-arch Docker image for `demo-app`
-2. **Builds and pushes** multi-arch Docker image for `load-generator`
-3. **Packages** the Helm chart (v0.2.0)
-4. **Publishes** the chart to GitHub Pages (`gh-pages` branch)
 
 ---
 

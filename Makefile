@@ -1,24 +1,28 @@
 .PHONY: up down status stats logs simulate spike stop-load compose-up compose-down port-forward
 
-# Apply Kubernetes manifests
+# Apply Kubernetes manifests (deploys app and monitoring namespaces)
 up:
 	kubectl apply -f k8s/
 
-# Tear down the Kubernetes stack
+# Tear down both namespaces
 down:
 	kubectl delete -f k8s/
 
-# Check status of pods and services
+# Check status of pods and services across both namespaces
 status:
-	kubectl get pods,svc -n monitoring
+	@echo "=== Application Namespace (app) ==="
+	@kubectl get pods,svc -n app 2>/dev/null || true
+	@echo ""
+	@echo "=== Monitoring Namespace (monitoring) ==="
+	@kubectl get pods,svc -n monitoring 2>/dev/null || true
 
 # Show live memory & CPU consumption
 stats:
 	docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}"
 
-# Stream logs of monitoring and load-generator pods
+# Stream logs of application and load-generator pods
 logs:
-	kubectl logs -n monitoring -l 'app in (demo-app,load-generator)' --tail=50 -f
+	kubectl logs -n app -l 'app in (demo-app,load-generator)' --tail=50 -f
 
 # Run steady-state load scenario (10 RPS, 5 VU)
 simulate:
@@ -43,9 +47,9 @@ compose-up:
 compose-down:
 	docker compose down
 
-# Port forward all services locally
+# Port forward all services across both namespaces locally
 port-forward:
-	kubectl port-forward svc/demo-app-svc -n monitoring 8000:8000 & \
-	kubectl port-forward svc/load-generator-svc -n monitoring 8089:8089 & \
+	kubectl port-forward svc/demo-app-svc -n app 8000:8000 & \
+	kubectl port-forward svc/load-generator-svc -n app 8089:8089 & \
 	kubectl port-forward svc/grafana-svc -n monitoring 3000:3000 & \
 	kubectl port-forward svc/prometheus-svc -n monitoring 9090:9090 &
