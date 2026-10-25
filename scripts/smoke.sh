@@ -63,7 +63,7 @@ echo ""
 # ── 1. All pods Running ───────────────────────────────────────────────────────
 echo "1. Pods ready"
 if wait_pods "$NS_APP" && wait_pods "$NS_MON"; then
-  CRASHED=$(kubectl get pods -n "$NS_APP" -n "$NS_MON" --no-headers 2>/dev/null | awk '{print $3}' | grep -vE 'Running|Completed' | wc -l | tr -d ' ')
+  CRASHED=$(kubectl get pods -n "$NS_APP" -n "$NS_MON" --no-headers 2>/dev/null | awk '$3 != "Running" && $3 != "Completed"' | wc -l | tr -d ' ')
   if [[ "$CRASHED" -eq 0 ]]; then
     pass "All pods Running/Completed in $NS_APP and $NS_MON"
   else
