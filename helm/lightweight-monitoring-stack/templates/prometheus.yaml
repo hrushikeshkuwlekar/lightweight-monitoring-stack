@@ -210,6 +210,8 @@ spec:
     metadata:
       labels:
         app: prometheus
+      annotations:
+        checksum/config: {{ printf "%v|%v|%v|%v|%v|%v|%v|%v|%v" .Values.prometheus.scrapeInterval .Values.prometheus.evaluationInterval .Values.prometheus.infraScrapeInterval .Values.prometheus.externalTarget .Values.loadGenerator.enabled .Values.kubeStateMetrics.enabled (include "lightweight-monitoring-stack.nodeMetricsMode" .) .Values.namespaces.app .Values.namespaces.monitoring | sha256sum | trunc 10 }}
     spec:
       serviceAccountName: prometheus
       securityContext:

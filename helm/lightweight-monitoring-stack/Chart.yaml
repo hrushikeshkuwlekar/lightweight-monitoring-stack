@@ -5,8 +5,8 @@ description: >-
   Deploys a FastAPI demo app with Prometheus metrics, standalone TPS load generator, Prometheus,
   and pre-provisioned Grafana dashboards — perfect for laptop demos.
 type: application
-version: 3.0.5
-appVersion: "3.0.5"
+version: 3.0.6
+appVersion: "3.0.6"
 home: https://github.com/hrushikeshkuwlekar/lightweight-monitoring-stack
 maintainers:
   - name: Hrushikesh Kuwlekar
