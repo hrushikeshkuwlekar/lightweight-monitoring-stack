@@ -1,3 +1,11 @@
+{{- $mode := include "lightweight-monitoring-stack.nodeMetricsMode" . }}
+{{- /* cAdvisor DaemonSet needs privileged host-path mounts, so when the user
+       opts into daemonset mode we automatically relax PSA on the monitoring
+       namespace. The app namespace keeps whatever level is configured. */}}
+{{- $monitoringLevel := .Values.podSecurity.level }}
+{{- if eq $mode "daemonset" }}
+{{- $monitoringLevel = "privileged" }}
+{{- end }}
 {{- if .Values.namespaces.create }}
 apiVersion: v1
 kind: Namespace
@@ -20,7 +28,7 @@ metadata:
     name: {{ .Values.namespaces.monitoring }}
     tier: observability
     {{- if .Values.podSecurity.enforce }}
-    pod-security.kubernetes.io/enforce: {{ .Values.podSecurity.level }}
+    pod-security.kubernetes.io/enforce: {{ $monitoringLevel }}
     pod-security.kubernetes.io/enforce-version: {{ .Values.podSecurity.version }}
     {{- end }}
     {{- include "lightweight-monitoring-stack.labels" . | nindent 4 }}
