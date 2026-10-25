@@ -108,6 +108,70 @@ jobs:
         run: make k8s-check
 
   # ─────────────────────────────────────────────────────────────────────────
+  # Smoke test on k3d — a second Kubernetes distro, catches
+  # distro-specific issues (coredns suffix, kube-proxy mode, CNI).
+  # Runs amd64 (GitHub-hosted runners emulate arm64 via QEMU slowly, so
+  # we keep this amd64 for CI budget; arm64 covered manually).
+  # ─────────────────────────────────────────────────────────────────────────
+  smoke-k3d:
+    name: Smoke (k3d / amd64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Install k3d
+        run: |
+          curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.7.4 bash
+          k3d version
+
+      - name: Create k3d cluster
+        run: |
+          k3d cluster create lms-ci --wait --timeout 120s \
+            --k3s-arg "--disable=traefik@server:0" \
+            --k3s-arg "--disable=metrics-server@server:0"
+          kubectl cluster-info
+
+      - name: Build and import app images
+        run: |
+          docker build -t demo-app:ci ./app
+          docker build -t load-generator:ci ./load-generator
+          k3d image import demo-app:ci load-generator:ci --cluster lms-ci
+
+      - name: Install chart from local source
+        run: |
+          helm install demo ./helm/lightweight-monitoring-stack \
+            --set profile=laptop \
+            --set demoApp.image.repository=demo-app \
+            --set demoApp.image.tag=ci \
+            --set demoApp.image.pullPolicy=Never \
+            --set loadGenerator.image.repository=load-generator \
+            --set loadGenerator.image.tag=ci \
+            --set loadGenerator.image.pullPolicy=Never \
+            --create-namespace \
+            --wait \
+            --timeout 5m
+
+      - name: Run smoke tests
+        run: |
+          chmod +x scripts/smoke.sh
+          PROM_PORT=9090 GRAFANA_PORT=3000 bash scripts/smoke.sh app monitoring
+
+      - name: Dump logs on failure
+        if: failure()
+        run: |
+          echo "=== pods ==="
+          kubectl get pods -A -o wide
+          echo "=== Prometheus logs ==="
+          kubectl logs -n monitoring deploy/prometheus --tail=50 || true
+          echo "=== Grafana logs ==="
+          kubectl logs -n monitoring deploy/grafana --tail=50 || true
+          echo "=== Events ==="
+          kubectl get events -A --sort-by='.lastTimestamp' | tail -30
+
+  # ─────────────────────────────────────────────────────────────────────────
   # Smoke test via Docker Compose (no Kubernetes required)
   # ─────────────────────────────────────────────────────────────────────────
   smoke-compose:
