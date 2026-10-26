@@ -90,7 +90,7 @@ metadata:
     app: grafana
     {{- include "lightweight-monitoring-stack.labels" . | nindent 4 }}
 binaryData:
-  k8s-pods-dashboard.json: {{ .Files.Get "files/dashboards/k8s-pods-dashboard.json" | b64enc }}
+  k8s-overview-dashboard.json: {{ .Files.Get "files/dashboards/k8s-overview-dashboard.json" | b64enc }}
 ---
 apiVersion: apps/v1
 kind: Deployment

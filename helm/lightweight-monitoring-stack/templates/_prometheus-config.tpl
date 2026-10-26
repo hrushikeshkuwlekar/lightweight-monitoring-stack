@@ -60,6 +60,8 @@ prometheus.yml: |
       relabel_configs:
         - action: labelmap
           regex: __meta_kubernetes_node_label_(.+)
+        - source_labels: [__meta_kubernetes_node_name]
+          target_label: node
         - target_label: __address__
           replacement: kubernetes.default.svc:443
         - source_labels: [__meta_kubernetes_node_name]
@@ -80,6 +82,8 @@ prometheus.yml: |
       relabel_configs:
         - action: labelmap
           regex: __meta_kubernetes_node_label_(.+)
+        - source_labels: [__meta_kubernetes_node_name]
+          target_label: node
         - target_label: __address__
           replacement: kubernetes.default.svc:443
         - source_labels: [__meta_kubernetes_node_name]
@@ -101,6 +105,8 @@ prometheus.yml: |
       relabel_configs:
         - action: labelmap
           regex: __meta_kubernetes_node_label_(.+)
+        - source_labels: [__meta_kubernetes_node_name]
+          target_label: node
 
     - job_name: 'cadvisor'
       scrape_interval: {{ .Values.prometheus.infraScrapeInterval }}
@@ -115,6 +121,8 @@ prometheus.yml: |
       relabel_configs:
         - action: labelmap
           regex: __meta_kubernetes_node_label_(.+)
+        - source_labels: [__meta_kubernetes_node_name]
+          target_label: node
 {{- end }}
 
 {{- if eq $mode "resource" }}
@@ -131,6 +139,8 @@ prometheus.yml: |
       relabel_configs:
         - action: labelmap
           regex: __meta_kubernetes_node_label_(.+)
+        - source_labels: [__meta_kubernetes_node_name]
+          target_label: node
 {{- end }}
 
 {{- if eq $mode "daemonset" }}
