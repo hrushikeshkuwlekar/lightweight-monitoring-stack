@@ -171,7 +171,13 @@ prometheus:
 cadvisor:
   image:
     repository: gcr.io/cadvisor/cadvisor
-    tag: v0.49.1
+    ## v0.55+ is required for Docker 25+ / containerd image store (OrbStack,
+    ## Docker Desktop); older releases can't map cgroups to containers there.
+    tag: v0.55.1
+  ## @param cadvisor.containerdSocket Path (inside the pod, host / is at /rootfs)
+  ## to the containerd socket. Empty = auto-detect plain containerd, k3s, or
+  ## Docker's bundled containerd, in that order.
+  containerdSocket: ""
   housekeepingInterval: "10s"
   maxHousekeepingInterval: "15s"
   resources:

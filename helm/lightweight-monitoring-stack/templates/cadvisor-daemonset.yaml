@@ -24,16 +24,30 @@ spec:
       containers:
         - name: cadvisor
           image: "{{ .Values.cadvisor.image.repository }}:{{ .Values.cadvisor.image.tag }}"
+          # cAdvisor resolves container metadata through containerd. Its socket
+          # lives in different places per distro — plain containerd (kind, EKS,
+          # GKE), k3s, or Docker 25+'s bundled containerd (OrbStack, Docker
+          # Desktop). Pick the first one present unless explicitly configured.
+          command: ["/bin/sh", "-c"]
           args:
-            - --housekeeping_interval={{ .Values.cadvisor.housekeepingInterval }}
-            - --max_housekeeping_interval={{ .Values.cadvisor.maxHousekeepingInterval }}
-            - --event_storage_event_limit=default=0
-            - --event_storage_age_limit=default=0
-            - --disable_metrics=percpu,sched,process,hugetlb,referenced_memory,resctrl,advtcp
-            # Keep only the three k8s container labels we need for the Grafana
-            # dashboards; drop everything else to keep series count down.
-            - --store_container_labels=false
-            - --whitelisted_container_labels=io.kubernetes.pod.name,io.kubernetes.pod.namespace,io.kubernetes.container.name
+            - |
+              SOCK="{{ .Values.cadvisor.containerdSocket }}"
+              if [ -z "$SOCK" ]; then
+                for s in /rootfs/run/containerd/containerd.sock \
+                         /rootfs/run/k3s/containerd/containerd.sock \
+                         /rootfs/run/docker/containerd/containerd.sock; do
+                  if [ -S "$s" ]; then SOCK="$s"; break; fi
+                done
+              fi
+              echo "cadvisor: containerd socket = ${SOCK:-<cadvisor default>}"
+              exec /usr/bin/cadvisor ${SOCK:+--containerd=$SOCK} \
+                --housekeeping_interval={{ .Values.cadvisor.housekeepingInterval }} \
+                --max_housekeeping_interval={{ .Values.cadvisor.maxHousekeepingInterval }} \
+                --event_storage_event_limit=default=0 \
+                --event_storage_age_limit=default=0 \
+                --disable_metrics=percpu,sched,process,hugetlb,referenced_memory,resctrl,advtcp \
+                --store_container_labels=false \
+                --whitelisted_container_labels=io.kubernetes.pod.name,io.kubernetes.pod.namespace,io.kubernetes.container.name
           ports:
             - name: http
               containerPort: 8080
