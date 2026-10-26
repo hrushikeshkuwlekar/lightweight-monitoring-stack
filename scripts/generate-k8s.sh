@@ -30,10 +30,12 @@ if [[ "${1:-}" == "--check" ]]; then
   TMP=$(mktemp)
   trap 'rm -f "$TMP"' EXIT
   { echo "$HEADER"; render; } > "$TMP"
-  if ! diff -u "$OUT" "$TMP" >/dev/null 2>&1; then
+  # Ignore blank lines: Helm 3 and Helm 4 separate documents differently.
+  strip() { grep -v '^[[:space:]]*$' "$1"; }
+  if ! diff -u <(strip "$OUT") <(strip "$TMP") >/dev/null 2>&1; then
     echo "ERROR: k8s/generated.yaml is out of sync with the Helm chart." >&2
     echo "       Run: make k8s-regen" >&2
-    diff -u "$OUT" "$TMP" | head -60 >&2
+    diff -u <(strip "$OUT") <(strip "$TMP") | head -60 >&2
     exit 1
   fi
   echo "k8s/generated.yaml is in sync."

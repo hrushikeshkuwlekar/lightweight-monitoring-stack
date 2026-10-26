@@ -124,8 +124,14 @@ fi
 
 # ── 4. Prometheus targets up ─────────────────────────────────────────────────
 echo "4. Prometheus targets"
-UP_COUNT=$(curl -sf "http://localhost:${PROM_PORT}/api/v1/query?query=up" 2>/dev/null \
-  | python3 -c "import sys,json; d=json.load(sys.stdin); print(sum(1 for r in d.get('data',{}).get('result',[]) if r.get('value',['','0'])[1]=='1'))" 2>/dev/null || echo 0)
+# Infra targets are scraped every 15 s, so on a fast-starting cluster the first
+# scrape may not have happened yet: retry for up to 60 s.
+for _ in $(seq 1 12); do
+  UP_COUNT=$(curl -sf "http://localhost:${PROM_PORT}/api/v1/query?query=up" 2>/dev/null \
+    | python3 -c "import sys,json; d=json.load(sys.stdin); print(sum(1 for r in d.get('data',{}).get('result',[]) if r.get('value',['','0'])[1]=='1'))" 2>/dev/null || echo 0)
+  [[ "$UP_COUNT" -ge 3 ]] && break
+  sleep 5
+done
 if [[ "$UP_COUNT" -ge 3 ]]; then
   pass "Prometheus has $UP_COUNT targets up (≥3 required)"
 else
@@ -134,8 +140,12 @@ fi
 
 # ── 5. kube_pod_info in Prometheus ───────────────────────────────────────────
 echo "5. kube_pod_info"
-KPI_COUNT=$(curl -sf "http://localhost:${PROM_PORT}/api/v1/query?query=kube_pod_info" 2>/dev/null \
-  | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d.get('data',{}).get('result',[])))" 2>/dev/null || echo 0)
+for _ in $(seq 1 12); do
+  KPI_COUNT=$(curl -sf "http://localhost:${PROM_PORT}/api/v1/query?query=kube_pod_info" 2>/dev/null \
+    | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d.get('data',{}).get('result',[])))" 2>/dev/null || echo 0)
+  [[ "$KPI_COUNT" -ge 1 ]] && break
+  sleep 5
+done
 if [[ "$KPI_COUNT" -ge 1 ]]; then
   pass "kube_pod_info has $KPI_COUNT series"
 else
