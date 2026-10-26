@@ -16,9 +16,9 @@ expose:
 nodeMetrics:
   mode: "off"
 
-## @param profile Set to 'laptop' to preserve demo-safe defaults regardless of other overrides.
-## The laptop profile forces: scrapeKubelet=false, prometheus memory limit=256Mi,
-## grafana anonymousAuth=true, and expose via LoadBalancer.
+## @param profile Set to 'laptop' for a zero-friction local demo. It forces:
+## nodeMetrics.mode=resource (unless you pick another mode), size=small (Prometheus limit 256Mi),
+## grafana anonymousAuth=true, and LoadBalancer services (unless expose.type is set).
 profile: ""
 
 ## @section Size preset
@@ -71,7 +71,7 @@ demoApp:
       cpu: 20m
       memory: 40Mi
     limits:
-      cpu: 100m
+      cpu: 250m  # headroom for ~100 TPS bursts; costs nothing at idle
       memory: 80Mi
   livenessProbe:
     path: /healthz
@@ -100,14 +100,20 @@ loadGenerator:
     limits:
       cpu: 200m
       memory: 100Mi
+  # An overloaded generator's event loop can lag for seconds (that's a lesson in
+  # the UI); generous probes keep Kubernetes from killing it mid-test.
   livenessProbe:
     path: /health
     initialDelaySeconds: 3
     periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
   readinessProbe:
     path: /health
     initialDelaySeconds: 2
     periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 6
 
 ## @section Kube State Metrics parameters
 kubeStateMetrics:
@@ -197,12 +203,16 @@ grafana:
     tag: 11.3.0
   port: 3000
   serviceType: ClusterIP
-  ## @param grafana.anonymousAuth Enable anonymous admin access (no login required)
-  anonymousAuth: true
-  ## @param grafana.adminUser Default admin username
+  ## @param grafana.anonymousAuth Anonymous Admin access with no login. Off by
+  ## default; profile=laptop turns it on for zero-friction local demos.
+  anonymousAuth: false
+  ## @param grafana.adminUser Admin username
   adminUser: "admin"
-  ## @param grafana.adminPassword Default admin password
-  adminPassword: "password"
+  ## @param grafana.adminPassword Admin password. Empty = keep the password already
+  ## stored in the grafana-admin Secret, or generate a random one on first install.
+  ## Read it with:
+  ##   kubectl get secret grafana-admin -n monitoring -o jsonpath='{.data.admin-password}' | base64 -d
+  adminPassword: ""
   resources:
     requests:
       cpu: 50m

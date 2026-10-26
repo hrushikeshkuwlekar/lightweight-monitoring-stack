@@ -48,12 +48,16 @@ spec:
             port: {{ .Values.loadGenerator.port }}
           initialDelaySeconds: {{ .Values.loadGenerator.livenessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.loadGenerator.livenessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.loadGenerator.livenessProbe.timeoutSeconds }}
+          failureThreshold: {{ .Values.loadGenerator.livenessProbe.failureThreshold }}
         readinessProbe:
           httpGet:
             path: {{ .Values.loadGenerator.readinessProbe.path }}
             port: {{ .Values.loadGenerator.port }}
           initialDelaySeconds: {{ .Values.loadGenerator.readinessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.loadGenerator.readinessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.loadGenerator.readinessProbe.timeoutSeconds }}
+          failureThreshold: {{ .Values.loadGenerator.readinessProbe.failureThreshold }}
 ---
 apiVersion: v1
 kind: Service

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demo App — System Under Test</title>
+<style>
+  :root{--bg:#0b1020;--card:#121a2d;--card2:#0f1626;--line:#22304d;--text:#e6ecf8;--muted:#8fa0bf;--accent:#7c8cff;
+        --ok:#3ecf8e;--warn:#f5b84b;--bad:#f25f6b;--mono:ui-monospace,SFMono-Regular,Menlo,monospace}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif}
+  .wrap{max-width:1080px;margin:0 auto;padding:26px 18px 60px}
+  h1{font-size:28px;margin:6px 0 4px}h2{font-size:16px;margin:0 0 4px}.sub{color:var(--muted);font-size:13px}
+  .badge{display:inline-block;font-size:12px;color:var(--accent);border:1px solid var(--line);border-radius:99px;padding:3px 12px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-top:16px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-top:10px}
+  a.tile{display:block;text-decoration:none;color:var(--text);background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px}
+  a.tile:hover{border-color:var(--accent)}a.tile b{display:block}a.tile span{color:var(--muted);font-size:12px}
+  .flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;font-size:13px}
+  .flow .box{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 12px}.flow .arrow{color:var(--muted)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:760px){.two{grid-template-columns:1fr}}
+  .ep{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;margin-top:10px}
+  button{border:0;border-radius:10px;padding:9px 14px;font-weight:600;cursor:pointer;color:#fff;background:#2a3557;white-space:nowrap}
+  button.ok{background:#1f7a55}button.warn{background:#8a6418}button.bad{background:#9b2f39}
+  .ep p{margin:0;color:var(--muted);font-size:12px}.ep code{color:var(--text);font-family:var(--mono)}
+  .log{font-family:var(--mono);font-size:12px;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:12px;height:120px;overflow:auto;color:var(--muted)}
+  .cap{display:flex;gap:18px;margin-top:12px;flex-wrap:wrap}.cap .n{font:600 22px var(--mono)}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-weight:500}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="badge">Lightweight Monitoring Stack · v3</span>
+  <h1>🖥️ Demo App — the system under test</h1>
+  <div class="sub">A small FastAPI shop. The load generator sends it traffic, Prometheus records how it copes, and Grafana shows the result.</div>
+  <div class="flow">
+    <div class="box">⚡ Load generator<br><span class="sub">sends requests</span></div><span class="arrow">→</span>
+    <div class="box">🖥️ This app<br><span class="sub">answers them</span></div><span class="arrow">→</span>
+    <div class="box">🔥 Prometheus<br><span class="sub">scrapes metrics every 5 s</span></div><span class="arrow">→</span>
+    <div class="box">📊 Grafana<br><span class="sub">draws dashboards</span></div>
+  </div>
+
+  <div class="card">
+    <h2>🚀 Open the stack</h2>
+    <div class="grid" id="tiles"></div>
+  </div>
+
+  <div class="two">
+    <div class="card">
+      <h2>🧪 Send a single request</h2>
+      <div class="sub">Each button calls one endpoint once and shows how long it took.</div>
+      <div class="ep"><button class="ok" data-ep="/api/order?tier=gold">Order</button><p><code>GET /api/order</code> — a normal, fast request (≈ 15 ms, 200 OK).</p></div>
+      <div class="ep"><button class="warn" data-ep="/api/slow?delay=0.8">Slow query</button><p><code>GET /api/slow?delay=0.8</code> — a slow database call (≈ 0.95 s).</p></div>
+      <div class="ep"><button class="bad" data-ep="/api/error">Error</button><p><code>GET /api/error</code> — an <b>intentional</b> 500, used to test alerts.</p></div>
+      <div class="log" id="log">Click a button to send a request…</div>
+    </div>
+
+    <div class="card">
+      <h2>🧱 App capacity</h2>
+      <div class="sub">Like a web server's thread pool, the app processes at most <b>worker slots</b> requests at once. Extra requests wait in a queue — so when the app is overloaded, response time grows while TPS stays flat.</div>
+      <div class="cap">
+        <div><div class="sub">Worker slots</div><div class="n" id="slots">—</div></div>
+        <div><div class="sub">Busy now</div><div class="n" id="busy">—</div></div>
+        <div><div class="sub">Waiting in queue</div><div class="n" id="queued">—</div></div>
+      </div>
+      <div class="row"><button data-slots="0">Unlimited</button><button data-slots="2">2</button><button data-slots="4">4</button><button data-slots="8">8</button><button data-slots="16">16</button></div>
+      <div class="sub" style="margin-top:10px">Max TPS ≈ worker slots ÷ time per request. With 4 slots and 0.35 s requests: 4 ÷ 0.35 ≈ 11 TPS.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📊 How small is it?</h2>
+    <div class="sub">Measured on OrbStack while handling ≈ 18 TPS.</div>
+    <table>
+      <tr><th>This stack</th><td>5 pods · ≈ 262 MB RAM · ≈ 0.12 CPU cores (+1 pod, +31 MB with the optional cAdvisor DaemonSet)</td></tr>
+      <tr><th>OpenTelemetry Astronomy Demo</th><td>≈ 34 pods · 12–16 GB RAM · 4–8 CPU cores</td></tr>
+    </table>
+  </div>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+/* links: work on localhost port-forwards and on OrbStack service URLs */
+const h = location.hostname, svc = h.endsWith(".svc.cluster.local");
+const appNs = svc ? h.split(".")[1] : "app";
+const u = (name, ns, port, path="") => svc ? `http://${name}.${ns}.svc.cluster.local:${port}${path}` : `http://${h}:${port}${path}`;
+const tiles = [
+  ["⚡ Load Generator", "Run tests and learn TPS concepts", u("load-generator-svc", appNs, 8089)],
+  ["📐 Performance Concepts", "Grafana: Little's Law, bottlenecks", u("grafana-svc","monitoring",3000,"/d/perf-concepts")],
+  ["📊 Load & TPS Analytics", "Grafana: the generator's view", u("grafana-svc","monitoring",3000,"/d/loadgen-analytics")],
+  ["📈 App Performance", "Grafana: the app's view", u("grafana-svc","monitoring",3000,"/d/demo-app-performance")],
+  ["☸️ Kubernetes Overview", "Grafana: nodes, pods, containers", u("grafana-svc","monitoring",3000,"/d/k8s-overview")],
+  ["🔥 Prometheus", "Targets, queries, alerts", u("prometheus-svc","monitoring",9090)],
+  ["📄 App metrics", "This app's /metrics endpoint", "/metrics"],
+];
+$("tiles").innerHTML = tiles.map(([t,d,href]) => `<a class="tile" href="${href}" target="_blank" rel="noopener"><b>${t}</b><span>${d}</span></a>`).join("");
+
+function log(line){ const el = $("log"); if (el.dataset.started !== "1") { el.innerHTML = ""; el.dataset.started = "1"; } el.insertAdjacentHTML("afterbegin", `<div>${line}</div>`); }
+document.querySelectorAll("[data-ep]").forEach(b => b.onclick = async () => {
+  const t0 = performance.now();
+  try {
+    const r = await fetch(b.dataset.ep); const ms = Math.round(performance.now() - t0);
+    const color = r.ok ? "var(--ok)" : "var(--bad)";
+    log(`<span style="color:${color}">${r.status}</span> ${b.dataset.ep} — ${ms} ms${r.ok ? "" : " (intentional)"}`);
+  } catch(e){ log(`<span style="color:var(--bad)">failed</span> ${b.dataset.ep} — ${e.message}`); }
+});
+
+async function cap(method="GET", body){
+  const r = await fetch("/api/admin/capacity", {method, headers: body ? {"Content-Type":"application/json"} : {}, body: body ? JSON.stringify(body) : undefined});
+  const c = await r.json();
+  $("slots").textContent = c.worker_slots || "∞"; $("busy").textContent = c.busy; $("queued").textContent = c.queued;
+}
+document.querySelectorAll("[data-slots]").forEach(b => b.onclick = () => cap("POST", {worker_slots: +b.dataset.slots}));
+cap(); setInterval(() => cap().catch(() => {}), 2000);
+</script>
+</body>
+</html>

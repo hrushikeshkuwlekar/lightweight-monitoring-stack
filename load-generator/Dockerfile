@@ -12,8 +12,8 @@ LABEL org.opencontainers.image.description="Async load generator for the lightwe
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY main.py .
-COPY scenarios.py .
+COPY main.py engine.py scenarios.py ./
+COPY static/ ./static/
 
 RUN adduser --disabled-password --gecos "" --uid 10001 appuser
 USER 10001

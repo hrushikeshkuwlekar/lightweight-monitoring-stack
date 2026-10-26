@@ -1,12 +1,12 @@
 .PHONY: up down status stats stats-docker logs simulate spike stop-load compose-up compose-down port-forward port-forward-stop dev-images smoke doctor k8s-regen k8s-check
 
-# Apply Kubernetes manifests (deploys app and monitoring namespaces)
+# Deploy without Helm: apply the manifests rendered from the chart (laptop profile)
 up:
-	kubectl apply -f k8s/
+	kubectl apply -f k8s/generated.yaml
 
-# Tear down both namespaces
+# Tear down everything `make up` created (both namespaces, cluster RBAC)
 down:
-	kubectl delete -f k8s/
+	kubectl delete -f k8s/generated.yaml --ignore-not-found
 
 # Check status of pods and services across both namespaces
 status:

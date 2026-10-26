@@ -8,6 +8,12 @@ NS_APP="${1:-app}"
 NS_MON="${2:-monitoring}"
 PROM_PORT="${PROM_PORT:-9090}"
 GRAFANA_PORT="${GRAFANA_PORT:-3000}"
+# Grafana admin credentials live in the chart's grafana-admin Secret (random by
+# default). Wrong basic-auth gets a 401 even when anonymous access is enabled.
+secret_field() { kubectl get secret grafana-admin -n "$NS_MON" -o jsonpath="{.data.$1}" 2>/dev/null | base64 -d 2>/dev/null || true; }
+GRAFANA_USER="${GRAFANA_USER:-$(secret_field admin-user)}"
+GRAFANA_PASS="${GRAFANA_PASS:-$(secret_field admin-password)}"
+GRAFANA_AUTH="${GRAFANA_USER:-admin}:${GRAFANA_PASS}"
 
 PASS=0
 FAIL=0
@@ -147,10 +153,10 @@ fi
 
 # ── 7. Grafana datasource health ─────────────────────────────────────────────
 echo "7. Grafana datasource"
-DS_LIST=$(curl -sf "http://admin:password@localhost:${GRAFANA_PORT}/api/datasources" 2>/dev/null || echo "[]")
+DS_LIST=$(curl -sf -u "$GRAFANA_AUTH" "http://localhost:${GRAFANA_PORT}/api/datasources" 2>/dev/null || echo "[]")
 DS_UID=$(echo "$DS_LIST" | python3 -c "import sys,json; ds=json.load(sys.stdin); matches=[d for d in ds if d.get('name')=='Prometheus']; print(matches[0].get('uid','') if matches else '')" 2>/dev/null || echo "")
 if [[ -n "$DS_UID" ]]; then
-  DS_HEALTH=$(curl -sf "http://admin:password@localhost:${GRAFANA_PORT}/api/datasources/uid/${DS_UID}/health" 2>/dev/null || echo "{}")
+  DS_HEALTH=$(curl -sf -u "$GRAFANA_AUTH" "http://localhost:${GRAFANA_PORT}/api/datasources/uid/${DS_UID}/health" 2>/dev/null || echo "{}")
   if echo "$DS_HEALTH" | grep -q '"status":"OK"'; then
     pass "Grafana datasource 'Prometheus' (uid=$DS_UID) is healthy"
   else
@@ -162,7 +168,7 @@ fi
 
 # ── 8. At least one dashboard provisioned ────────────────────────────────────
 echo "8. Grafana dashboards"
-DASH_COUNT=$(curl -sf "http://admin:password@localhost:${GRAFANA_PORT}/api/search?type=dash-db" 2>/dev/null \
+DASH_COUNT=$(curl -sf -u "$GRAFANA_AUTH" "http://localhost:${GRAFANA_PORT}/api/search?type=dash-db" 2>/dev/null \
   | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo 0)
 if [[ "$DASH_COUNT" -ge 1 ]]; then
   pass "Grafana has $DASH_COUNT dashboard(s) provisioned"

@@ -1,41 +1,57 @@
-🚀 Lightweight Monitoring Stack {{ .Chart.Version }} has been deployed!
+{{- $app := .Values.namespaces.app }}
+{{- $mon := .Values.namespaces.monitoring }}
+{{- $mode := include "lightweight-monitoring-stack.nodeMetricsMode" . }}
+{{- $anon := include "lightweight-monitoring-stack.grafanaAnonymousAuth" . }}
+🚀 Lightweight Monitoring Stack {{ .Chart.Version }} deployed{{ if .Values.profile }} (profile: {{ .Values.profile }}){{ end }}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  Workload Architecture: 2 Namespaces
-  • Application Namespace: {{ .Values.namespaces.app }}
-  • Monitoring Namespace:  {{ .Values.namespaces.monitoring }}
-  Total estimated RAM: ~220 MB  |  CPU: < 0.08 cores
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Namespaces:    {{ $app }} (demo-app{{ if .Values.loadGenerator.enabled }}, load-generator{{ end }})  |  {{ $mon }} (prometheus, grafana, kube-state-metrics{{ if eq $mode "daemonset" }}, cadvisor{{ end }})
+  Node metrics:  {{ $mode }}{{ if eq $mode "off" }}  → Kubernetes dashboard container panels stay empty; enable with --set nodeMetrics.mode=resource (or daemonset){{ end }}
+  Service type:  {{ include "lightweight-monitoring-stack.svcType" (list . .Values.grafana.serviceType) }}
 
-📋 Check pod status:
+📋 Pod status:
+  kubectl get pods -n {{ $app }}
+  kubectl get pods -n {{ $mon }}
 
-  kubectl get pods -n {{ .Values.namespaces.app }}
-  kubectl get pods -n {{ .Values.namespaces.monitoring }}
+🔐 Grafana login:
+{{- if eq $anon "true" }}
+  Anonymous Admin access is ON (no login needed) — fine for a laptop demo, not for shared clusters.
+{{- else }}
+  user:     {{ .Values.grafana.adminUser }}
+  password: kubectl get secret grafana-admin -n {{ $mon }} -o jsonpath='{.data.admin-password}' | base64 -d; echo
+{{- end }}
 
-🌐 Access the services:
+🌐 Access the services — pick one:
 
-  Demo App:       kubectl port-forward svc/demo-app-svc       -n {{ .Values.namespaces.app }} 8000:{{ .Values.demoApp.port }}
+  a) Port-forward (any cluster):
+       kubectl port-forward svc/grafana-svc        -n {{ $mon }} 3000:{{ .Values.grafana.port }}
+       kubectl port-forward svc/prometheus-svc     -n {{ $mon }} 9090:{{ .Values.prometheus.port }}
+       kubectl port-forward svc/demo-app-svc       -n {{ $app }} 8000:{{ .Values.demoApp.port }}
 {{- if .Values.loadGenerator.enabled }}
-  Load Generator: kubectl port-forward svc/load-generator-svc  -n {{ .Values.namespaces.app }} 8089:{{ .Values.loadGenerator.port }}
+       kubectl port-forward svc/load-generator-svc -n {{ $app }} 8089:{{ .Values.loadGenerator.port }}
 {{- end }}
-{{- if .Values.grafana.enabled }}
-  Grafana:        kubectl port-forward svc/grafana-svc         -n {{ .Values.namespaces.monitoring }} 3000:{{ .Values.grafana.port }}
-{{- end }}
-{{- if .Values.prometheus.enabled }}
-  Prometheus:     kubectl port-forward svc/prometheus-svc      -n {{ .Values.namespaces.monitoring }} 9090:{{ .Values.prometheus.port }}
-{{- end }}
+     A port-forward is pinned to one pod: re-run it after an upgrade or pod restart.
+     (From a repo checkout, `make port-forward` / `make port-forward-stop` manage all four.)
 
-Then open in your browser:
-  • Demo App        → http://localhost:8000
+  b) OrbStack — no port-forward needed, survives restarts:
+       http://grafana-svc.{{ $mon }}.svc.cluster.local:{{ .Values.grafana.port }}
+       http://prometheus-svc.{{ $mon }}.svc.cluster.local:{{ .Values.prometheus.port }}
+       http://demo-app-svc.{{ $app }}.svc.cluster.local:{{ .Values.demoApp.port }}
 {{- if .Values.loadGenerator.enabled }}
-  • Load Generator  → http://localhost:8089 (TPS & Concurrency Controller)
-{{- end }}
-{{- if .Values.grafana.enabled }}
-  • Grafana         → http://localhost:3000 (pre-provisioned App & TPS Dashboards)
-{{- end }}
-{{- if .Values.prometheus.enabled }}
-  • Prometheus      → http://localhost:9090
+       http://load-generator-svc.{{ $app }}.svc.cluster.local:{{ .Values.loadGenerator.port }}
 {{- end }}
 
-💡 Trigger load via CLI:
-  curl -X POST http://localhost:8089/api/scenarios/steady-state/run
+📊 Grafana dashboards (paths on the Grafana URL):
+  /d/demo-app-performance   App Performance & Health
+{{- if .Values.loadGenerator.enabled }}
+  /d/loadgen-analytics      Load Generator & TPS Analytics
+  /d/perf-concepts          Performance Concepts (Little's Law, bottlenecks)
+{{- end }}
+  /d/k8s-overview           Kubernetes / Overview{{ if ne $mode "daemonset" }}  (full container/network detail needs nodeMetrics.mode=daemonset){{ end }}
+{{- if .Values.loadGenerator.enabled }}
+
+💡 Generate traffic:
+  curl -X POST http://localhost:8089/api/scenarios/steady-state/run     # or open the load generator UI
+{{- end }}
+
+🩺 From a repo checkout:  make doctor (health check)  |  make smoke (9-point smoke test)
+📖 Docs: {{ .Chart.Home }}

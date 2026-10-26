@@ -1,5 +1,7 @@
 {
-  "annotations": { "list": [] },
+  "annotations": {
+    "list": []
+  },
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -21,7 +23,12 @@
   "panels": [
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
       "id": 100,
       "title": "⚡ Real-Time TPS & Concurrency KPIs",
       "type": "row"
@@ -30,7 +37,12 @@
       "id": 1,
       "title": "Achieved TPS",
       "type": "stat",
-      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 1
+      },
       "targets": [
         {
           "expr": "sum(rate(loadgen_requests_total[30s]))",
@@ -41,12 +53,20 @@
       "fieldConfig": {
         "defaults": {
           "unit": "reqps",
-          "color": { "mode": "palette-classic" },
+          "color": {
+            "mode": "palette-classic"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "blue", "value": null },
-              { "color": "green", "value": 5 }
+              {
+                "color": "blue",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 5
+              }
             ]
           }
         }
@@ -54,9 +74,14 @@
     },
     {
       "id": 2,
-      "title": "Target RPS",
+      "title": "Target TPS",
       "type": "stat",
-      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 1
+      },
       "targets": [
         {
           "expr": "loadgen_target_rps",
@@ -67,19 +92,32 @@
       "fieldConfig": {
         "defaults": {
           "unit": "reqps",
-          "color": { "fixedColor": "purple", "mode": "fixed" },
+          "color": {
+            "fixedColor": "purple",
+            "mode": "fixed"
+          },
           "thresholds": {
             "mode": "absolute",
-            "steps": [{ "color": "purple", "value": null }]
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
           }
         }
       }
     },
     {
       "id": 3,
-      "title": "Virtual Users (VU)",
+      "title": "Virtual users",
       "type": "stat",
-      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 1
+      },
       "targets": [
         {
           "expr": "loadgen_concurrent_users",
@@ -90,10 +128,18 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "color": { "fixedColor": "semi-dark-blue", "mode": "fixed" },
+          "color": {
+            "fixedColor": "semi-dark-blue",
+            "mode": "fixed"
+          },
           "thresholds": {
             "mode": "absolute",
-            "steps": [{ "color": "blue", "value": null }]
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
           }
         }
       }
@@ -102,7 +148,12 @@
       "id": 4,
       "title": "Requests In-Flight",
       "type": "stat",
-      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 1
+      },
       "targets": [
         {
           "expr": "loadgen_requests_in_flight",
@@ -116,9 +167,18 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 15 },
-              { "color": "red", "value": 30 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 15
+              },
+              {
+                "color": "red",
+                "value": 30
+              }
             ]
           }
         }
@@ -128,7 +188,12 @@
       "id": 5,
       "title": "Client p95 Latency",
       "type": "stat",
-      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 1
+      },
       "targets": [
         {
           "expr": "histogram_quantile(0.95, sum(rate(loadgen_request_duration_seconds_bucket[1m])) by (le))",
@@ -142,9 +207,18 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 0.4 },
-              { "color": "red", "value": 1.0 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.4
+              },
+              {
+                "color": "red",
+                "value": 1.0
+              }
             ]
           }
         }
@@ -154,7 +228,12 @@
       "id": 6,
       "title": "Client Error %",
       "type": "stat",
-      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      },
       "targets": [
         {
           "expr": "clamp_min((sum(rate(loadgen_errors_total[1m])) or vector(0)) / (sum(rate(loadgen_requests_total[1m])) or vector(1)) * 100, 0)",
@@ -168,9 +247,18 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 2 },
-              { "color": "red", "value": 10 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 2
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
             ]
           }
         }
@@ -178,16 +266,26 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
       "id": 101,
       "title": "📈 Throughput Tracking & Capacity Efficiency",
       "type": "row"
     },
     {
       "id": 7,
-      "title": "Achieved TPS vs Target RPS",
+      "title": "Actual TPS vs Target TPS",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 16, "x": 0, "y": 6 },
+      "gridPos": {
+        "h": 8,
+        "w": 16,
+        "x": 0,
+        "y": 6
+      },
       "targets": [
         {
           "expr": "sum(rate(loadgen_requests_total[15s]))",
@@ -196,7 +294,7 @@
         },
         {
           "expr": "loadgen_target_rps",
-          "legendFormat": "Target RPS",
+          "legendFormat": "Target TPS",
           "refId": "B"
         }
       ],
@@ -211,15 +309,27 @@
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "Target RPS" },
+            "matcher": {
+              "id": "byName",
+              "options": "Target RPS"
+            },
             "properties": [
               {
                 "id": "custom.lineStyle",
-                "value": { "dash": [4, 4], "fill": "dash" }
+                "value": {
+                  "dash": [
+                    4,
+                    4
+                  ],
+                  "fill": "dash"
+                }
               },
               {
                 "id": "color",
-                "value": { "fixedColor": "purple", "mode": "fixed" }
+                "value": {
+                  "fixedColor": "purple",
+                  "mode": "fixed"
+                }
               }
             ]
           }
@@ -230,10 +340,15 @@
       "id": 8,
       "title": "Target Delivery Rate (%)",
       "type": "gauge",
-      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 6 },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 6
+      },
       "targets": [
         {
-          "expr": "clamp_max(clamp_min((sum(rate(loadgen_requests_total[30s])) / clamp_min(loadgen_target_rps, 0.01)) * 100, 0), 150)",
+          "expr": "clamp_max(clamp_min((sum(rate(loadgen_requests_total[30s])) / clamp_min(sum(loadgen_target_rps), 0.01)) * 100, 0), 150) and on() sum(loadgen_target_rps) > 0",
           "legendFormat": "Delivery %",
           "refId": "A"
         }
@@ -246,10 +361,22 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "yellow", "value": 70 },
-              { "color": "green", "value": 90 },
-              { "color": "yellow", "value": 115 }
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "green",
+                "value": 90
+              },
+              {
+                "color": "yellow",
+                "value": 115
+              }
             ]
           }
         }
@@ -257,7 +384,12 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 14
+      },
       "id": 102,
       "title": "⏱️ Client Latency Percentiles & Traffic Mix Breakdown",
       "type": "row"
@@ -266,7 +398,12 @@
       "id": 9,
       "title": "Client-Perceived Latency Percentiles (p50, p90, p95, p99)",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 15
+      },
       "targets": [
         {
           "expr": "histogram_quantile(0.99, sum(rate(loadgen_request_duration_seconds_bucket[1m])) by (le))",
@@ -304,7 +441,12 @@
       "id": 10,
       "title": "Traffic Throughput by Endpoint (TPS)",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 15
+      },
       "targets": [
         {
           "expr": "sum by (endpoint) (rate(loadgen_requests_total[30s]))",
@@ -317,7 +459,10 @@
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
-            "stacking": { "group": "A", "mode": "normal" },
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
             "fillOpacity": 30
           },
           "unit": "reqps"
@@ -326,7 +471,12 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 23
+      },
       "id": 103,
       "title": "💥 Error Types & Network Bandwidth",
       "type": "row"
@@ -335,7 +485,12 @@
       "id": 11,
       "title": "Client-Encountered Errors by Category",
       "type": "timeseries",
-      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 24 },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
       "targets": [
         {
           "expr": "sum by (error_type) (rate(loadgen_errors_total[1m]))",
@@ -357,7 +512,12 @@
       "id": 12,
       "title": "Simulated Network Throughput (KB/s)",
       "type": "timeseries",
-      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 24 },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
       "targets": [
         {
           "expr": "rate(loadgen_bytes_sent_total[30s]) / 1024",
@@ -384,10 +544,24 @@
   ],
   "refresh": "5s",
   "schemaVersion": 39,
-  "tags": ["monitoring", "load-generator", "tps", "demo"],
-  "time": { "from": "now-15m", "to": "now" },
+  "tags": [
+    "monitoring",
+    "load-generator",
+    "tps",
+    "demo"
+  ],
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
   "timepicker": {
-    "refresh_intervals": ["2s", "5s", "10s", "30s", "1m"]
+    "refresh_intervals": [
+      "2s",
+      "5s",
+      "10s",
+      "30s",
+      "1m"
+    ]
   },
   "timezone": "browser",
   "title": "Load Generator & TPS Analytics",

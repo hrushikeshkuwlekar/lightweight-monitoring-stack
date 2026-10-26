@@ -53,14 +53,16 @@ Usage: {{ include "lightweight-monitoring-stack.svcType" (list . .Values.prometh
 {{- end }}
 
 {{/*
-Effective nodeMetrics mode.
-profile=laptop forces resource mode (light: CPU+memory only, ~50 series).
+Effective nodeMetrics mode. profile=laptop upgrades the default "off" to
+"resource" (CPU + memory, ~50 series) but respects any mode you choose,
+so laptop + daemonset works.
 */}}
 {{- define "lightweight-monitoring-stack.nodeMetricsMode" -}}
-{{- if eq .Values.profile "laptop" -}}
+{{- $mode := .Values.nodeMetrics.mode | default "off" -}}
+{{- if and (eq .Values.profile "laptop") (eq $mode "off") -}}
 resource
 {{- else -}}
-{{- .Values.nodeMetrics.mode | default "off" }}
+{{- $mode }}
 {{- end -}}
 {{- end }}
 
@@ -101,13 +103,13 @@ Usage:
 {{- $size := include "lightweight-monitoring-stack.size" $ctx -}}
 {{- $presets := dict
     "nano" (dict
-      "demoApp"           (dict "req" (dict "cpu" "10m" "memory" "25Mi") "lim" (dict "cpu" "50m"  "memory" "60Mi"))
+      "demoApp"           (dict "req" (dict "cpu" "10m" "memory" "25Mi") "lim" (dict "cpu" "150m" "memory" "60Mi"))
       "loadGenerator"     (dict "req" (dict "cpu" "10m" "memory" "25Mi") "lim" (dict "cpu" "100m" "memory" "60Mi"))
       "prometheus"        (dict "req" (dict "cpu" "20m" "memory" "40Mi") "lim" (dict "cpu" "150m" "memory" "180Mi"))
       "grafana"           (dict "req" (dict "cpu" "30m" "memory" "70Mi") "lim" (dict "cpu" "300m" "memory" "260Mi"))
       "kubeStateMetrics"  (dict "req" (dict "cpu" "10m" "memory" "20Mi") "lim" (dict "cpu" "80m"  "memory" "48Mi")))
     "small" (dict
-      "demoApp"           (dict "req" (dict "cpu" "20m" "memory" "40Mi") "lim" (dict "cpu" "100m" "memory" "80Mi"))
+      "demoApp"           (dict "req" (dict "cpu" "20m" "memory" "40Mi") "lim" (dict "cpu" "250m" "memory" "80Mi"))
       "loadGenerator"     (dict "req" (dict "cpu" "20m" "memory" "40Mi") "lim" (dict "cpu" "200m" "memory" "100Mi"))
       "prometheus"        (dict "req" (dict "cpu" "30m" "memory" "60Mi") "lim" (dict "cpu" "200m" "memory" "256Mi"))
       "grafana"           (dict "req" (dict "cpu" "50m" "memory" "100Mi") "lim" (dict "cpu" "500m" "memory" "400Mi"))

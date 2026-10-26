@@ -35,7 +35,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.30"
+          cpus: "0.20"   # same as Kubernetes, so the "Load generator overload" lesson behaves identically
           memory: 100M
         reservations:
           cpus: "0.05"

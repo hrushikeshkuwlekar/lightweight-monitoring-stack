@@ -1,11 +1,15 @@
 {{- if .Values.grafana.enabled }}
 {{- $ns := .Values.namespaces.monitoring | default .Release.Namespace }}
+{{- /* Admin password precedence: explicit value (lets you rotate it) >
+       password already in the cluster (survives upgrades) > random on first install. */}}
 {{- $existing := lookup "v1" "Secret" $ns "grafana-admin" }}
 {{- $password := "" }}
-{{- if $existing }}
+{{- if .Values.grafana.adminPassword }}
+{{- $password = .Values.grafana.adminPassword }}
+{{- else if $existing }}
 {{- $password = index $existing.data "admin-password" | b64dec }}
 {{- else }}
-{{- $password = .Values.grafana.adminPassword }}
+{{- $password = randAlphaNum 24 }}
 {{- end }}
 apiVersion: v1
 kind: Secret
@@ -80,6 +84,7 @@ metadata:
 binaryData:
   demo-app-dashboard.json: {{ .Files.Get "files/dashboards/demo-app-dashboard.json" | b64enc }}
   loadgen-dashboard.json: {{ .Files.Get "files/dashboards/loadgen-dashboard.json" | b64enc }}
+  perf-concepts-dashboard.json: {{ .Files.Get "files/dashboards/perf-concepts-dashboard.json" | b64enc }}
 ---
 apiVersion: v1
 kind: ConfigMap

@@ -12,7 +12,8 @@ LABEL org.opencontainers.image.description="Ultra-low resource monitoring demo a
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY main.py .
+COPY main.py ./
+COPY static/ ./static/
 
 RUN adduser --disabled-password --gecos "" --uid 10001 appuser
 USER 10001

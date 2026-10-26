@@ -28,3 +28,4 @@ helm/lightweight-monitoring-stack/charts/
 *.log
 .env
 .make/
+todays-output/
